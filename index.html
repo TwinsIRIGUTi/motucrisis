@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Restore Layout</title>
+    <title>アキエクライシス - In-game Sound Switch</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -41,6 +41,8 @@
         .icon-box { width: 38px; height: 38px; background-size: contain; background-repeat: no-repeat; border: 1px solid #444; border-radius: 4px; background-color: rgba(0,0,0,0.4); margin-bottom: 2px; }
 
         .sound-switch { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #777; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        /* プレイ中スイッチ専用スタイル */
+        .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; margin: 0; pointer-events: auto; z-index: 30; }
 
         .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
         .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
@@ -81,7 +83,7 @@
                     <span id="best-shogo-text">いちげんさん</span>
                 </div>
                 <div class="sound-switch" onpointerdown="toggleSound()">
-                    音設定: <span id="sound-status-text">ON</span>
+                    音設定: <span class="sound-status-text">ON</span>
                 </div>
                 <button class="action-btn" onpointerdown="startGame()">宴開始</button>
                 <button class="action-btn secondary-btn" onpointerdown="showHowTo()">遊び方</button>
@@ -118,6 +120,9 @@
             <div id="hp-display">体力: ❤️❤️❤️</div>
             <div id="score-board">0点</div>
             <div id="combo-display">コンボ: 0</div>
+            <div class="sound-switch ingame-sound-switch" onpointerdown="toggleSound()">
+                音: <span class="sound-status-text">ON</span>
+            </div>
         </div>
         <div id="player"></div>
     </div>
@@ -142,8 +147,15 @@
 
         function toggleSound() {
             soundEnabled = !soundEnabled;
-            document.getElementById('sound-status-text').innerText = soundEnabled ? "ON" : "OFF";
-            if (!soundEnabled) { Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); }
+            const statusTexts = document.querySelectorAll('.sound-status-text');
+            statusTexts.forEach(el => el.innerText = soundEnabled ? "ON" : "OFF");
+            
+            if (!soundEnabled) { 
+                Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
+            } else if (isGameRunning) {
+                sounds.bgm.play().catch(()=>{});
+                if (hp === 1) sounds.siren.play().catch(()=>{});
+            }
         }
 
         function playSfx(audio) {
@@ -280,7 +292,7 @@
             document.getElementById('combo-display').innerText = "コンボ: " + combo;
             if (hp === 1 && isGameRunning) {
                 document.getElementById('bg-danger').classList.add('danger-active');
-                if (soundEnabled && sounds.siren.paused) sounds.siren.play();
+                if (soundEnabled && sounds.siren.paused) sounds.siren.play().catch(()=>{});
             } else {
                 document.getElementById('bg-danger').classList.remove('danger-active');
                 sounds.siren.pause();
