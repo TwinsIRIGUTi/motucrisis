@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>アキエクライシス - Fixed Logic</title>
+    <style>
+        html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
+        body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
+        #game-screen { position: relative; width: 360px; height: 500px; background: #222; border: 4px solid #440000; margin-top: 10px; overflow: hidden; border-radius: 10px; }
+        
+        .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.5s; z-index: 1; pointer-events: none;}
+        .bg-active { opacity: 1; }
+        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s; z-index: 2; pointer-events: none; }
+        .danger-active { opacity: 1 !important; }
+
+        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; }
+        
+        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
+        .item-umewari { filter: drop-shadow(0 0 12px #ff00ff); z-index: 6 !important; }
+
+        @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
+        @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
+        .shivering { animation: shiver 0.1s infinite !important; }
+
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
+        .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
+        
+        #best-info-container { margin-bottom: 15px; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid #555; text-align: center; }
+        .info-list { text-align: left; font-size: 12px; line-height: 1.3; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
+        .motsu-icons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px 0; justify-content: center; }
+        .icon-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; width: 42px; }
+        .icon-box { width: 38px; height: 38px; background-size: contain; background-repeat: no-repeat; border: 1px solid #444; border-radius: 4px; background-color: rgba(0,0,0,0.4); margin-bottom: 2px; }
+
+        .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
+        .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
+        
+        .shogo-stamp { border: 3px double rgba(200, 0, 0, 0.7); padding: 5px; transform: rotate(-12deg); font-weight: bold; margin-top: 15px; text-align: center; font-size: 20px; color: rgba(200, 0, 0, 0.7); }
+        .shogo-gold { color: #D4AF37 !important; } 
+        .shogo-enji { color: #800000 !important; } 
+        .shogo-mizu { color: #00BFFF !important; } 
+        .shogo-kiiro { color: #FFFF00 !important; } 
+        
+        .action-btn { padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 220px; margin-top: 10px; outline: none; }
+        .secondary-btn { background: #444; border-bottom: 5px solid #222; font-size: 18px; }
+
+        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; }
+        .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; cursor: pointer; touch-action: none; }
+    </style>
+</head>
+<body>
+
+    <div id="game-screen">
+        <div id="bg0" class="bg-layer bg-active" style="background-image: url('./images/background1.png');"></div>
+        <div id="bg1" class="bg-layer" style="background-image: url('./images/background2.png');"></div>
+        <div id="bg2" class="bg-layer" style="background-image: url('./images/background3.png');"></div>
+        <div id="bg3" class="bg-layer" style="background-image: url('./images/background4.png');"></div>
+        <div id="bg4" class="bg-layer" style="background-image: url('./images/background5.png');"></div>
+        <div id="bg5" class="bg-layer" style="background-image: url('./images/background6.png');"></div>
+        <div id="bg-danger"></div>
+        <div id="damage-flash"></div>
+
+        <div id="title-screen" class="overlay">
+            <div id="title-content">
+                <div class="crisis-title">アキエクライシス</div>
+                <div id="best-info-container">
+                    最高記録: <span id="best-score-text">0</span> 点<br>
+                    <span id="best-shogo-text">いちげんさん</span>
+                </div>
+                <button class="action-btn" onpointerdown="startGame()">宴開始</button>
+                <button class="action-btn secondary-btn" onpointerdown="showHowTo()">遊び方</button>
+            </div>
+            <div id="result-area" style="display:none;"></div>
+            <button id="return-btn-id" class="action-btn" style="display:none;" onpointerdown="location.reload()">ごちそうさま</button>
+        </div>
+
+        <div id="how-to-play-screen" class="overlay" style="display:none;">
+            <h2 style="color: #ffcc00; margin-top: 0;">宴の心得</h2>
+            <div class="info-list">
+                <b>【得点モツ】</b> 通常10点 / <b>高速50点</b>
+                <div class="motsu-icons">
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/shiro.png')"></div>シロ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/hatsu.png')"></div>ハツ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/lever.png')"></div>レバー</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/abura.png')"></div>アブラ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/kasira.png')"></div>カシラ</div>
+                </div>
+                <b>【苦手なモツ】</b> 当たるとダメージ(体力-1)
+                <div class="motsu-icons">
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/gatsu.png')"></div>ガツ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>ナンコツ</div>
+                </div>
+                <b>【梅割り】</b> 呑むと体力1回復！
+                <div class="motsu-icons">
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/umewari.png')"></div>梅割り</div>
+                </div>
+            </div>
+            <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
+        </div>
+
+        <div id="ui-layer">
+            <div id="hp-display">体力: ❤️❤️❤️</div>
+            <div id="score-board">0点</div>
+            <div id="combo-display">コンボ: 0</div>
+        </div>
+        <div id="player"></div>
+    </div>
+
+    <div style="margin-top:15px; display:flex; gap:30px;">
+        <button class="btn" onpointerdown="moveLeft()">◀</button>
+        <button class="btn" onpointerdown="moveRight()">▶</button>
+    </div>
+
+    <script>
+        const totalLines = 5, lineWidth = 360 / totalLines;
+        const sounds = {
+            bgm: new Audio('./audio/bgm.mp3'),
+            damage: new Audio('./audio/damage.mp3'),
+            siren: new Audio('./audio/siren.mp3'),
+            heal: new Audio('./audio/heal.mp3'),
+            get: new Audio('./audio/get.mp3')
+        };
+        sounds.bgm.loop = true; sounds.siren.loop = true;
+
+        let score, hp, combo, playerLine, isGameRunning = false, playerImgIdx = 1;
+        let spawnInterval, bgInterval, charInterval;
+        let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0;
+        let lastBgIdx = 0, currentSpawnRate = 1400;
+
+        const motsuScore = [{img:'./images/shiro.png',type:'score'},{img:'./images/hatsu.png',type:'score'},{img:'./images/lever.png',type:'score'},{img:'./images/abura.png',type:'score'},{img:'./images/kasira.png',type:'score'}];
+        const motsuDanger = [{img:'./images/gatsu.png',type:'damage'},{img:'./images/nankotsu.png',type:'damage'}];
+
+        function getShogoData(s) {
+            if (s >= 10000) return { text: "レジェンド", class: "shogo-gold" };
+            if (s >= 3001) return { text: "常連さん", class: "shogo-enji" };
+            if (s >= 1000) return { text: "お客さん", class: "shogo-mizu" };
+            if (s >= 500) return { text: "御新規さん", class: "shogo-kiiro" };
+            return { text: "いちげんさん", class: "" };
+        }
+
+        window.onload = () => {
+            const best = parseInt(localStorage.getItem('akie_best_score') || '0');
+            document.getElementById('best-score-text').innerText = best;
+            document.getElementById('best-shogo-text').innerText = getShogoData(best).text;
+        };
+
+        function showHowTo() { document.getElementById('how-to-play-screen').style.display = 'flex'; }
+        function hideHowTo() { document.getElementById('how-to-play-screen').style.display = 'none'; }
+
+        function startGame() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            document.getElementById('title-screen').style.display = 'none';
+            sounds.bgm.currentTime = 0;
+            sounds.bgm.play().catch(()=>{});
+
+            score = 0; hp = 3; combo = 0; playerLine = 2; playerImgIdx = 1;
+            baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
+            updateUI();
+            updatePlayerPos();
+            
+            clearInterval(bgInterval); bgInterval = setInterval(switchBackground, 30000);
+            clearInterval(spawnInterval); spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
+            clearInterval(charInterval); charInterval = setInterval(increaseDifficulty, 1000);
+        }
+
+        function switchBackground() {
+            const bgs = document.querySelectorAll('.bg-layer');
+            let nextIdx; do { nextIdx = Math.floor(Math.random() * bgs.length); } while (nextIdx === lastBgIdx);
+            bgs.forEach(b => b.classList.remove('bg-active'));
+            bgs[nextIdx].classList.add('bg-active');
+            lastBgIdx = nextIdx;
+        }
+
+        function increaseDifficulty() {
+            if (!isGameRunning) return;
+            let newRate = score >= 10000 ? 500 : (score >= 5000 ? 700 : (score >= 3000 ? 1000 : 1400));
+            if (newRate !== currentSpawnRate) {
+                currentSpawnRate = newRate;
+                clearInterval(spawnInterval);
+                spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
+            }
+        }
+
+        function spawnMotsu() {
+            if (!isGameRunning) return;
+            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLine);
+            lastLine = line;
+            
+            const motsu = document.createElement('div');
+            let data, speed = baseFallSpeed, isChar = false;
+            
+            if (umewariLotteryCounter >= 14 && Math.random() < 0.25) {
+                umewariLotteryCounter = 0; 
+                data = { img: './images/umewari.png', type: 'item' }; 
+                motsu.classList.add('item-umewari');
+            } else {
+                const dangerProb = score >= 1000 ? 0.4 : 0.3;
+                data = (Math.random() < dangerProb) ? motsuDanger[Math.floor(Math.random() * motsuDanger.length)] : motsuScore[Math.floor(Math.random() * motsuScore.length)];
+                let charProb = 0.05 + Math.min(score / 15000, 0.75);
+                if (Math.random() < charProb) { speed *= 3.0; isChar = true; motsu.classList.add('char-mode'); }
+            }
+
+            motsu.className = 'motsu'; 
+            motsu.style.backgroundImage = `url('${data.img}')`;
+            motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px'; 
+            motsu.style.top = '-70px'; 
+            document.getElementById('game-screen').appendChild(motsu);
+            
+            baseFallSpeed += 0.003;
+            let top = -70;
+            function fall() {
+                if (!isGameRunning) { motsu.remove(); return; }
+                top += speed; motsu.style.top = top + 'px';
+                if (top > 380 && top < 450 && line === playerLine) { handleColl(data, isChar); motsu.remove(); return; }
+                if (top > 500) { motsu.remove(); return; }
+                requestAnimationFrame(fall);
+            }
+            requestAnimationFrame(fall);
+        }
+
+        function handleColl(d, isChar) {
+            if (d.type === 'damage') {
+                hp--; combo = 0; sounds.damage.play();
+                document.getElementById('damage-flash').style.opacity = "0.7"; 
+                setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
+                if (hp <= 0) gameOver();
+            } else if (d.type === 'item') {
+                if (hp < 3) { hp++; sounds.heal.play(); } else { score += 200; sounds.get.play(); }
+            } else {
+                combo++; score += (isChar ? 50 : 10); autoHealCounter++; umewariLotteryCounter++;
+                sounds.get.currentTime = 0; sounds.get.play();
+                if (autoHealCounter >= 10) { 
+                    autoHealCounter = 0; 
+                    if (hp < 3) { hp++; sounds.heal.play(); } else { score += 100; }
+                }
+            }
+            updateUI();
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
+            sounds.bgm.pause(); sounds.siren.pause(); sounds.damage.play();
+            document.getElementById('player').classList.add('shivering');
+            const best = parseInt(localStorage.getItem('akie_best_score') || '0');
+            if (score > best) localStorage.setItem('akie_best_score', score);
+            setTimeout(() => {
+                const titleScreen = document.getElementById('title-screen');
+                document.getElementById('title-content').style.display = 'none';
+                const resultArea = document.getElementById('result-area');
+                resultArea.style.display = 'block';
+                const shogoData = getShogoData(score);
+                resultArea.innerHTML = `
+                    <div class="denpyo">
+                        <h2>御計算書</h2>
+                        <div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div>
+                        <div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div>
+                        <div class="total-row"><span>合計</span><span>${score} 点</span></div>
+                        <div class="shogo-stamp ${shogoData.class}">${shogoData.text}</div>
+                    </div>`;
+                titleScreen.style.display = 'flex';
+                document.getElementById('return-btn-id').style.display = 'block';
+            }, 800);
+        }
+
+        function updateUI() {
+            document.getElementById('hp-display').innerText = "体力: " + "❤️".repeat(Math.max(0, hp));
+            document.getElementById('score-board').innerText = score + "点";
+            document.getElementById('combo-display').innerText = "コンボ: " + combo;
+            if (hp === 1 && isGameRunning) {
+                document.getElementById('bg-danger').classList.add('danger-active');
+                if (sounds.siren.paused) sounds.siren.play();
+            } else {
+                document.getElementById('bg-danger').classList.remove('danger-active');
+                sounds.siren.pause();
+            }
+        }
+
+        function updatePlayerPos() {
+            const p = document.getElementById('player');
+            p.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
+            playerImgIdx = (playerImgIdx === 1) ? 2 : 1;
+            p.style.backgroundImage = `url('./images/player${playerImgIdx}.png')`;
+        }
+
+        window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(); } };
+        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning) { playerLine++; updatePlayerPos(); } };
+    </script>
+</body>
+</html>
