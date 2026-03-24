@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - In-game Sound Switch</title>
+    <title>モツモツクライシス</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -15,111 +15,74 @@
         .danger-active { opacity: 1 !important; }
 
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
         
-        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
-        .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
+        .motsu, .enemy { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        .fast-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.2); z-index: 8 !important; }
         .item-umewari { filter: drop-shadow(0 0 12px #ff00ff); z-index: 6 !important; }
 
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
         .shivering { animation: shiver 0.1s infinite !important; }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background-color: #000; 
-            background-image: url('./images/title_bg.png'); 
-            background-size: cover; background-position: center;
-            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
-        
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; background-image: url('./images/title_bg.png'); background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
         .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
         
-        #best-info-container { margin-bottom: 10px; padding: 10px 20px; background: rgba(0,0,0,0.6); border-radius: 15px; border: 1px solid #555; text-align: center; }
-        
-        .info-list { text-align: left; font-size: 12px; line-height: 1.3; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
-        .motsu-icons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px 0; justify-content: center; }
-        .icon-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; width: 42px; }
-        .icon-box { width: 38px; height: 38px; background-size: contain; background-repeat: no-repeat; border: 1px solid #444; border-radius: 4px; background-color: rgba(0,0,0,0.4); margin-bottom: 2px; }
+        .char-selector { display: flex; gap: 10px; margin: 15px 0; }
+        .char-btn { width: 60px; height: 60px; border: 3px solid #555; border-radius: 10px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: rgba(255,255,255,0.1); cursor: pointer; }
+        .char-btn.selected { border-color: #ff0000; background-color: rgba(255,0,0,0.3); box-shadow: 0 0 10px #ff0000; }
 
         .sound-switch { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #777; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        /* プレイ中スイッチ専用スタイル */
-        .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; margin: 0; pointer-events: auto; z-index: 30; }
-
-        .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
-        .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
-        
-        .shogo-stamp, #best-shogo-text { font-weight: bold; }
-        .shogo-stamp { border: 3px double rgba(200, 0, 0, 0.7); padding: 5px; transform: rotate(-12deg); margin-top: 15px; text-align: center; font-size: 20px; color: rgba(200, 0, 0, 0.7); }
-        #best-shogo-text { font-size: 18px; display: block; margin-top: 5px; }
+        .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: auto; z-index: 30; }
 
         .shogo-gold { color: #D4AF37 !important; } 
         .shogo-enji { color: #800000 !important; } 
         .shogo-mizu { color: #00BFFF !important; } 
         .shogo-kiiro { color: #D19E1A !important; } 
-        
-        .action-btn { padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 220px; margin-top: 10px; outline: none; }
-        .secondary-btn { background: #444; border-bottom: 5px solid #222; font-size: 18px; }
 
-        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; }
+        .action-btn { padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 200px; margin-top: 10px; outline: none; }
+        
+        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; font-size: 14px; }
         .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; cursor: pointer; touch-action: none; }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
-        <div id="bg0" class="bg-layer bg-active" style="background-image: url('./images/background1.png');"></div>
-        <div id="bg1" class="bg-layer" style="background-image: url('./images/background2.png');"></div>
-        <div id="bg2" class="bg-layer" style="background-image: url('./images/background3.png');"></div>
-        <div id="bg3" class="bg-layer" style="background-image: url('./images/background4.png');"></div>
-        <div id="bg4" class="bg-layer" style="background-image: url('./images/background5.png');"></div>
-        <div id="bg5" class="bg-layer" style="background-image: url('./images/background6.png');"></div>
+        <div id="bg-container">
+            <div class="bg-layer bg-active" style="background-image: url('./images/background1.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background2.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background3.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background4.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background5.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background6.png');"></div>
+        </div>
         <div id="bg-danger"></div>
         <div id="damage-flash"></div>
 
         <div id="title-screen" class="overlay">
-            <div id="title-content">
-                <div class="crisis-title">アキエクライシス</div>
-                <div id="best-info-container">
-                    最高記録: <span id="best-score-text">0</span> 点<br>
-                    <span id="best-shogo-text">いちげんさん</span>
-                </div>
-                <div class="sound-switch" onpointerdown="toggleSound()">
-                    音設定: <span class="sound-status-text">ON</span>
-                </div>
-                <button class="action-btn" onpointerdown="startGame()">宴開始</button>
-                <button class="action-btn secondary-btn" onpointerdown="showHowTo()">遊び方</button>
+            <div class="crisis-title">モツモツクライシス</div>
+            <div id="best-info" style="margin-bottom:10px; text-align:center; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px;">
+                最高記録: <span id="best-score-text">0</span> 点<br>
+                <span id="best-shogo-text">いちげんさん</span>
             </div>
-            <div id="result-area" style="display:none;"></div>
-            <button id="return-btn-id" class="action-btn" style="display:none;" onpointerdown="location.reload()">ごちそうさま</button>
-        </div>
+            
+            <div style="font-size:14px; margin-top:10px;">店員を選んで開始：</div>
+            <div class="char-selector">
+                <div class="char-btn selected" id="btn-A" onclick="selectChar('A')" style="background-image:url('./images/playerA1.png')"></div>
+                <div class="char-btn" id="btn-B" onclick="selectChar('B')" style="background-image:url('./images/playerB1.png')"></div>
+                <div class="char-btn" id="btn-C" onclick="selectChar('C')" style="background-image:url('./images/playerC1.png')"></div>
+                <div class="char-btn" id="btn-D" onclick="selectChar('D')" style="background-image:url('./images/playerD1.png')"></div>
+            </div>
 
-        <div id="how-to-play-screen" class="overlay" style="display:none;">
-            <h2 style="color: #ffcc00; margin-top: 0;">宴の心得</h2>
-            <div class="info-list">
-                <b>【得点モツ】</b> 通常10点 / <b>高速50点</b>
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/shiro.png')"></div>シロ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/hatsu.png')"></div>ハツ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/lever.png')"></div>レバー</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/abura.png')"></div>アブラ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/kasira.png')"></div>カシラ</div>
-                </div>
-                <b>【苦手なモツ】</b> 当たるとダメージ(体力-1)
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/gatsu.png')"></div>ガツ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>ナンコツ</div>
-                </div>
-                <b>【梅割り】</b> 呑むと体力1回復！
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/umewari.png')"></div>梅割り</div>
-                </div>
-            </div>
-            <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
+            <div class="sound-switch" onpointerdown="toggleSound()">音設定: <span class="sound-status-text">ON</span></div>
+            <button class="action-btn" onpointerdown="startGame()">宴開始</button>
         </div>
 
         <div id="ui-layer">
             <div id="hp-display">体力: ❤️❤️❤️</div>
             <div id="score-board">0点</div>
-            <div id="combo-display">コンボ: 0</div>
+            <div id="chain-display">連続: 0</div>
             <div class="sound-switch ingame-sound-switch" onpointerdown="toggleSound()">
                 音: <span class="sound-status-text">ON</span>
             </div>
@@ -135,161 +98,183 @@
     <script>
         const totalLines = 5, lineWidth = 360 / totalLines;
         let soundEnabled = true;
+        let selectedChar = 'A';
 
         const sounds = {
             bgm: new Audio('./audio/bgm.mp3'),
             damage: new Audio('./audio/damage.mp3'),
             siren: new Audio('./audio/siren.mp3'),
             heal: new Audio('./audio/heal.mp3'),
-            get: new Audio('./audio/get.mp3')
+            get: new Audio('./audio/get.mp3'),
+            selectA: new Audio('./audio/selectA.mp3'),
+            selectB: new Audio('./audio/selectB.mp3'),
+            selectC: new Audio('./audio/selectC.mp3'),
+            selectD: new Audio('./audio/selectD.mp3')
         };
         sounds.bgm.loop = true; sounds.siren.loop = true;
 
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const statusTexts = document.querySelectorAll('.sound-status-text');
-            statusTexts.forEach(el => el.innerText = soundEnabled ? "ON" : "OFF");
-            
-            if (!soundEnabled) { 
-                Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
-            } else if (isGameRunning) {
-                sounds.bgm.play().catch(()=>{});
-                if (hp === 1) sounds.siren.play().catch(()=>{});
+        function selectChar(type) {
+            selectedChar = type;
+            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById(`btn-${type}`).classList.add('selected');
+            if (soundEnabled) {
+                const s = sounds[`select${type}`];
+                if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
             }
         }
 
-        function playSfx(audio) {
-            if (soundEnabled) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.querySelectorAll('.sound-status-text').forEach(el => el.innerText = soundEnabled ? "ON" : "OFF");
+            if (!soundEnabled) { Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); }
+            else if (isGameRunning) { sounds.bgm.play().catch(()=>{}); }
         }
 
-        let score, hp, combo, playerLine, isGameRunning = false, playerImgIdx = 1;
-        let spawnInterval, bgInterval, charInterval;
-        let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0;
-        let lastBgIdx = 0, currentSpawnRate = 1400;
+        function playSfx(audio) { if (soundEnabled && audio) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
 
-        const motsuScore = [{img:'./images/shiro.png',type:'score'},{img:'./images/hatsu.png',type:'score'},{img:'./images/lever.png',type:'score'},{img:'./images/abura.png',type:'score'},{img:'./images/kasira.png',type:'score'}];
-        const motsuDanger = [{img:'./images/gatsu.png',type:'damage'},{img:'./images/nankotsu.png',type:'damage'}];
+        let score, hp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
+        let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
+        let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
+
+        const motsuList = ['./images/shiro.png', './images/hatsu.png', './images/lever.png', './images/abura.png', './images/kasira.png', './images/gatsu.png', './images/nankotsu.png'];
 
         function getShogoData(s) {
-            if (s >= 10000) return { text: "レジェンド", class: "shogo-gold" };
-            if (s >= 3001) return { text: "常連さん", class: "shogo-enji" };
-            if (s >= 1000) return { text: "お客さん", class: "shogo-mizu" };
-            if (s >= 500) return { text: "御新規さん", class: "shogo-kiiro" };
+            if (s >= 15000) return { text: "レジェンド", class: "shogo-gold" };
+            if (s >= 5000) return { text: "常連さん", class: "shogo-enji" };
+            if (s >= 2500) return { text: "お客さん", class: "shogo-mizu" };
+            if (s >= 1000) return { text: "御新規さん", class: "shogo-kiiro" };
             return { text: "いちげんさん", class: "" };
         }
 
         window.onload = () => {
-            const best = parseInt(localStorage.getItem('akie_best_score') || '0');
+            const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
             document.getElementById('best-score-text').innerText = best;
-            const bestShogo = getShogoData(best);
-            const titleShogoDisp = document.getElementById('best-shogo-text');
-            titleShogoDisp.innerText = bestShogo.text;
-            titleShogoDisp.className = bestShogo.class;
+            const shogo = getShogoData(best);
+            const el = document.getElementById('best-shogo-text');
+            el.innerText = shogo.text; el.className = shogo.class;
         };
-
-        function showHowTo() { document.getElementById('how-to-play-screen').style.display = 'flex'; }
-        function hideHowTo() { document.getElementById('how-to-play-screen').style.display = 'none'; }
 
         function startGame() {
             if (isGameRunning) return;
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
             if (soundEnabled) { sounds.bgm.currentTime = 0; sounds.bgm.play().catch(()=>{}); }
-            score = 0; hp = 3; combo = 0; playerLine = 2; playerImgIdx = 1;
-            baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
+
+            score = 0; hp = 3; chainCount = 0; playerLine = 2; baseSpeed = 1.3; playerImgIdx = 1;
             updateUI(); updatePlayerPos();
-            clearInterval(bgInterval); bgInterval = setInterval(switchBackground, 30000);
-            clearInterval(spawnInterval); spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
-            clearInterval(charInterval); charInterval = setInterval(increaseDifficulty, 1000);
-        }
+            
+            clearInterval(playerAnimInterval);
+            playerAnimInterval = setInterval(() => {
+                playerImgIdx = (playerImgIdx === 1) ? 2 : 1;
+                const p = document.getElementById('player');
+                p.style.backgroundImage = `url('./images/player${selectedChar}${playerImgIdx}.png')`;
+            }, 1000);
 
-        function switchBackground() {
-            const bgs = document.querySelectorAll('.bg-layer');
-            let nextIdx; do { nextIdx = Math.floor(Math.random() * bgs.length); } while (nextIdx === lastBgIdx);
-            bgs.forEach(b => b.classList.remove('bg-active'));
-            bgs[nextIdx].classList.add('bg-active');
-            lastBgIdx = nextIdx;
-        }
-
-        function increaseDifficulty() {
-            if (!isGameRunning) return;
-            let newRate = score >= 10000 ? 500 : (score >= 5000 ? 700 : (score >= 3000 ? 1000 : 1400));
-            if (newRate !== currentSpawnRate) {
-                currentSpawnRate = newRate;
-                clearInterval(spawnInterval);
-                spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
-            }
+            spawnMotsuInterval = setInterval(spawnMotsu, 1400);
+            spawnEnemyInterval = setInterval(spawnEnemy, 2000);
+            bgInterval = setInterval(switchBackground, 30000);
         }
 
         function spawnMotsu() {
             if (!isGameRunning) return;
-            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLine);
-            lastLine = line;
+            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu);
+            lastLineMotsu = line;
+
             const motsu = document.createElement('div');
-            let data, speed = baseFallSpeed, isChar = false;
-            if (umewariLotteryCounter >= 14 && Math.random() < 0.25) {
-                umewariLotteryCounter = 0; data = { img: './images/umewari.png', type: 'item' }; 
-                motsu.classList.add('item-umewari');
-            } else {
-                const dangerProb = score >= 1000 ? 0.4 : 0.3;
-                data = (Math.random() < dangerProb) ? motsuDanger[Math.floor(Math.random() * motsuDanger.length)] : motsuScore[Math.floor(Math.random() * motsuScore.length)];
-                let charProb = 0.05 + Math.min(score / 15000, 0.75);
-                if (Math.random() < charProb) { speed *= 3.0; isChar = true; motsu.classList.add('char-mode'); }
-            }
-            motsu.className = 'motsu'; motsu.style.backgroundImage = `url('${data.img}')`;
-            motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px'; 
-            motsu.style.top = '-70px'; document.getElementById('game-screen').appendChild(motsu);
-            baseFallSpeed += 0.003;
-            let top = -70;
+            motsu.className = 'motsu';
+            let img = motsuList[Math.floor(Math.random() * motsuList.length)];
+            let isHeal = Math.random() < 0.05; 
+            if (isHeal) img = './images/umewari.png';
+            
+            let isFast = Math.random() < 0.15; 
+            let speed = baseSpeed * (isFast ? 3.0 : 1.0);
+            if (isFast) motsu.classList.add('fast-mode');
+
+            motsu.style.backgroundImage = `url('${img}')`;
+            motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
+            let top = -70; document.getElementById('game-screen').appendChild(motsu);
+
             function fall() {
                 if (!isGameRunning) { motsu.remove(); return; }
                 top += speed; motsu.style.top = top + 'px';
-                if (top > 380 && top < 450 && line === playerLine) { handleColl(data, isChar); motsu.remove(); return; }
-                if (top > 500) { motsu.remove(); return; }
+                if (top > 380 && top < 450 && line === playerLine) {
+                    if (isHeal) { if(hp < 3) hp++; playSfx(sounds.heal); }
+                    else { 
+                        chainCount++; 
+                        score += (isFast ? 50 : 10);
+                        if (chainCount % 10 === 0) score += 5;
+                        playSfx(sounds.get); 
+                    }
+                    updateUI(); motsu.remove(); return;
+                }
+                if (top > 500) {
+                    if (!isHeal) { chainCount = 0; updateUI(); }
+                    motsu.remove(); return;
+                }
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
         }
 
-        function handleColl(d, isChar) {
-            if (d.type === 'damage') {
-                hp--; combo = 0; playSfx(sounds.damage);
-                document.getElementById('damage-flash').style.opacity = "0.7"; 
-                setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
-                if (hp <= 0) gameOver();
-            } else if (d.type === 'item') {
-                if (hp < 3) { hp++; playSfx(sounds.heal); } else { score += 200; playSfx(sounds.get); }
-            } else {
-                combo++; score += (isChar ? 50 : 10); autoHealCounter++; umewariLotteryCounter++;
-                playSfx(sounds.get);
-                if (autoHealCounter >= 10) { 
-                    autoHealCounter = 0; if (hp < 3) { hp++; playSfx(sounds.heal); } else { score += 100; }
+        function spawnEnemy() {
+            if (!isGameRunning) return;
+            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineEnemy);
+            lastLineEnemy = line;
+
+            const enemy = document.createElement('div');
+            enemy.className = 'enemy';
+            const isShoe = Math.random() < 0.5;
+            enemy.style.backgroundImage = isShoe ? "url('./images/shoe.png')" : "url('./images/bottle.png')";
+            
+            let speed = baseSpeed * 2.5;
+            enemy.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
+            let top = -70, startTime = Date.now();
+            document.getElementById('game-screen').appendChild(enemy);
+
+            function fall() {
+                if (!isGameRunning) { enemy.remove(); return; }
+                top += speed;
+                let horizontal = 0;
+                if (isShoe) { horizontal = Math.sin((Date.now() - startTime) / 100) * 15; }
+                
+                enemy.style.top = top + 'px';
+                enemy.style.transform = `translateX(${horizontal}px) rotate(${isShoe ? (top % 360) : 0}deg)`;
+
+                if (top > 380 && top < 450 && line === playerLine) {
+                    hp--; playSfx(sounds.damage);
+                    document.getElementById('damage-flash').style.opacity = "0.7";
+                    setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
+                    updateUI(); enemy.remove();
+                    if (hp <= 0) gameOver(); return;
                 }
+                if (top > 500) { enemy.remove(); return; }
+                requestAnimationFrame(fall);
             }
-            updateUI();
+            requestAnimationFrame(fall);
+        }
+
+        function switchBackground() {
+            const bgs = document.querySelectorAll('.bg-layer');
+            let nextIdx = Math.floor(Math.random() * bgs.length);
+            bgs.forEach(b => b.classList.remove('bg-active'));
+            bgs[nextIdx].classList.add('bg-active');
         }
 
         function gameOver() {
             isGameRunning = false;
-            clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
-            sounds.bgm.pause(); sounds.siren.pause(); playSfx(sounds.damage);
+            clearInterval(spawnMotsuInterval); clearInterval(spawnEnemyInterval); 
+            clearInterval(bgInterval); clearInterval(playerAnimInterval);
+            sounds.bgm.pause(); sounds.siren.pause();
             document.getElementById('player').classList.add('shivering');
-            const best = parseInt(localStorage.getItem('akie_best_score') || '0');
-            if (score > best) localStorage.setItem('akie_best_score', score);
-            setTimeout(() => {
-                document.getElementById('title-content').style.display = 'none';
-                document.getElementById('result-area').style.display = 'block';
-                const shogoData = getShogoData(score);
-                document.getElementById('result-area').innerHTML = `<div class="denpyo"><h2>御計算書</h2><div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div><div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div><div class="total-row"><span>合計</span><span>${score} 点</span></div><div class="shogo-stamp ${shogoData.class}">${shogoData.text}</div></div>`;
-                document.getElementById('title-screen').style.display = 'flex';
-                document.getElementById('return-btn-id').style.display = 'block';
-            }, 800);
+            const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
+            if (score > best) localStorage.setItem('motsu_best_score', score);
+            setTimeout(() => { location.reload(); }, 1200);
         }
 
         function updateUI() {
             document.getElementById('hp-display').innerText = "体力: " + "❤️".repeat(Math.max(0, hp));
             document.getElementById('score-board').innerText = score + "点";
-            document.getElementById('combo-display').innerText = "コンボ: " + combo;
+            document.getElementById('chain-display').innerText = "連続: " + chainCount;
             if (hp === 1 && isGameRunning) {
                 document.getElementById('bg-danger').classList.add('danger-active');
                 if (soundEnabled && sounds.siren.paused) sounds.siren.play().catch(()=>{});
@@ -302,8 +287,7 @@
         function updatePlayerPos() {
             const p = document.getElementById('player');
             p.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
-            playerImgIdx = (playerImgIdx === 1) ? 2 : 1;
-            p.style.backgroundImage = `url('./images/player${playerImgIdx}.png')`;
+            p.style.backgroundImage = `url('./images/player${selectedChar}${playerImgIdx}.png')`;
         }
 
         window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(); } };
