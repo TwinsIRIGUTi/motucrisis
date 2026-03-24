@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Colored Titles Final</title>
+    <title>アキエクライシス - Final Adjust</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -15,7 +15,7 @@
         .danger-active { opacity: 1 !important; }
 
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
         
         .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
         .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
@@ -25,27 +25,32 @@
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
         .shivering { animation: shiver 0.1s infinite !important; }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
+        /* タイトル背景設定（画像があれば表示、なければ黒） */
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background-color: #000; 
+            background-image: url('./images/title_bg.png'); 
+            background-size: cover; background-position: center;
+            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
+        
         .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
         
-        #best-info-container { margin-bottom: 15px; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid #555; text-align: center; }
-        .info-list { text-align: left; font-size: 12px; line-height: 1.3; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
-        .motsu-icons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px 0; justify-content: center; }
-        .icon-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; width: 42px; }
-        .icon-box { width: 38px; height: 38px; background-size: contain; background-repeat: no-repeat; border: 1px solid #444; border-radius: 4px; background-color: rgba(0,0,0,0.4); margin-bottom: 2px; }
+        #best-info-container { margin-bottom: 10px; padding: 10px 20px; background: rgba(0,0,0,0.6); border-radius: 15px; border: 1px solid #555; text-align: center; }
+        
+        /* サウンドスイッチ */
+        .sound-switch { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #777; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .sound-switch:active { background: rgba(255,255,255,0.2); }
 
         .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
         .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
         
-        /* 称号スタンプとタイトル称号の文字色カスタム */
-        .shogo-stamp, #best-shogo-text { font-weight: bold; color: rgba(200, 0, 0, 0.7); /* デフォルト赤 */ }
-        .shogo-stamp { border: 3px double rgba(200, 0, 0, 0.7); padding: 5px; transform: rotate(-12deg); margin-top: 15px; text-align: center; font-size: 20px; }
+        .shogo-stamp, #best-shogo-text { font-weight: bold; }
+        .shogo-stamp { border: 3px double rgba(200, 0, 0, 0.7); padding: 5px; transform: rotate(-12deg); margin-top: 15px; text-align: center; font-size: 20px; color: rgba(200, 0, 0, 0.7); }
         #best-shogo-text { font-size: 18px; display: block; margin-top: 5px; }
 
         .shogo-gold { color: #D4AF37 !important; } /* レジェンド: 金色 */
         .shogo-enji { color: #800000 !important; } /* 常連さん: えんじ色 */
         .shogo-mizu { color: #00BFFF !important; } /* お客さん: 水色 */
-        .shogo-kiiro { color: #FFFF00 !important; } /* 御新規さん: 黄色 */
+        .shogo-kiiro { color: #D19E1A !important; } /* 御新規さん: 辛子色 */
         
         .action-btn { padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 220px; margin-top: 10px; outline: none; }
         .secondary-btn { background: #444; border-bottom: 5px solid #222; font-size: 18px; }
@@ -73,6 +78,9 @@
                     最高記録: <span id="best-score-text">0</span> 点<br>
                     <span id="best-shogo-text">いちげんさん</span>
                 </div>
+                <div class="sound-switch" onpointerdown="toggleSound()">
+                    音設定: <span id="sound-status-text">ON</span>
+                </div>
                 <button class="action-btn" onpointerdown="startGame()">宴開始</button>
                 <button class="action-btn secondary-btn" onpointerdown="showHowTo()">遊び方</button>
             </div>
@@ -82,21 +90,9 @@
 
         <div id="how-to-play-screen" class="overlay" style="display:none;">
             <h2 style="color: #ffcc00; margin-top: 0;">宴の心得</h2>
-            <div class="info-list">
-                <b>【得点モツ】</b> 通常10点 / <b>高速50点</b>
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/shiro.png')"></div>シロ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/hatsu.png')"></div>ハツ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/lever.png')"></div>レバー</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/abura.png')"></div>アブラ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/kasira.png')"></div>カシラ</div>
-                </div>
-                <b>【苦手なモツ】</b> 当たるとダメージ(体力-1)
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/gatsu.png')"></div>ガツ</div>
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>ナンコツ</div>
-                </div>
-                <b>【梅割り】</b> 呑むと体力1回復！
+            <div style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; font-size: 13px;">
+                <b>【得点】</b> 通常10点 / 高速50点<br>
+                <b>【体力】</b> 梅割りで回復。0で終了。
             </div>
             <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
         </div>
@@ -116,6 +112,8 @@
 
     <script>
         const totalLines = 5, lineWidth = 360 / totalLines;
+        let soundEnabled = true;
+
         const sounds = {
             bgm: new Audio('./audio/bgm.mp3'),
             damage: new Audio('./audio/damage.mp3'),
@@ -124,6 +122,18 @@
             get: new Audio('./audio/get.mp3')
         };
         sounds.bgm.loop = true; sounds.siren.loop = true;
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-status-text').innerText = soundEnabled ? "ON" : "OFF";
+            if (!soundEnabled) {
+                Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; });
+            }
+        }
+
+        function playSfx(audio) {
+            if (soundEnabled) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+        }
 
         let score, hp, combo, playerLine, isGameRunning = false, playerImgIdx = 1;
         let spawnInterval, bgInterval, charInterval;
@@ -144,12 +154,10 @@
         window.onload = () => {
             const best = parseInt(localStorage.getItem('akie_best_score') || '0');
             document.getElementById('best-score-text').innerText = best;
-            
-            // タイトルの称号にも色クラスを適用
             const bestShogo = getShogoData(best);
             const titleShogoDisp = document.getElementById('best-shogo-text');
             titleShogoDisp.innerText = bestShogo.text;
-            titleShogoDisp.className = bestShogo.class; // クラスを付与
+            titleShogoDisp.className = bestShogo.class;
         };
 
         function showHowTo() { document.getElementById('how-to-play-screen').style.display = 'flex'; }
@@ -159,13 +167,11 @@
             if (isGameRunning) return;
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
-            sounds.bgm.currentTime = 0;
-            sounds.bgm.play().catch(()=>{});
+            if (soundEnabled) { sounds.bgm.currentTime = 0; sounds.bgm.play().catch(()=>{}); }
 
             score = 0; hp = 3; combo = 0; playerLine = 2; playerImgIdx = 1;
             baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
-            updateUI();
-            updatePlayerPos();
+            updateUI(); updatePlayerPos();
             
             clearInterval(bgInterval); bgInterval = setInterval(switchBackground, 30000);
             clearInterval(spawnInterval); spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
@@ -194,13 +200,10 @@
             if (!isGameRunning) return;
             let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLine);
             lastLine = line;
-            
             const motsu = document.createElement('div');
             let data, speed = baseFallSpeed, isChar = false;
-            
             if (umewariLotteryCounter >= 14 && Math.random() < 0.25) {
-                umewariLotteryCounter = 0; 
-                data = { img: './images/umewari.png', type: 'item' }; 
+                umewariLotteryCounter = 0; data = { img: './images/umewari.png', type: 'item' }; 
                 motsu.classList.add('item-umewari');
             } else {
                 const dangerProb = score >= 1000 ? 0.4 : 0.3;
@@ -208,13 +211,9 @@
                 let charProb = 0.05 + Math.min(score / 15000, 0.75);
                 if (Math.random() < charProb) { speed *= 3.0; isChar = true; motsu.classList.add('char-mode'); }
             }
-
-            motsu.className = 'motsu'; 
-            motsu.style.backgroundImage = `url('${data.img}')`;
+            motsu.className = 'motsu'; motsu.style.backgroundImage = `url('${data.img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px'; 
-            motsu.style.top = '-70px'; 
-            document.getElementById('game-screen').appendChild(motsu);
-            
+            motsu.style.top = '-70px'; document.getElementById('game-screen').appendChild(motsu);
             baseFallSpeed += 0.003;
             let top = -70;
             function fall() {
@@ -229,18 +228,17 @@
 
         function handleColl(d, isChar) {
             if (d.type === 'damage') {
-                hp--; combo = 0; sounds.damage.play();
+                hp--; combo = 0; playSfx(sounds.damage);
                 document.getElementById('damage-flash').style.opacity = "0.7"; 
                 setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
                 if (hp <= 0) gameOver();
             } else if (d.type === 'item') {
-                if (hp < 3) { hp++; sounds.heal.play(); } else { score += 200; sounds.get.play(); }
+                if (hp < 3) { hp++; playSfx(sounds.heal); } else { score += 200; playSfx(sounds.get); }
             } else {
                 combo++; score += (isChar ? 50 : 10); autoHealCounter++; umewariLotteryCounter++;
-                sounds.get.currentTime = 0; sounds.get.play();
+                playSfx(sounds.get);
                 if (autoHealCounter >= 10) { 
-                    autoHealCounter = 0; 
-                    if (hp < 3) { hp++; sounds.heal.play(); } else { score += 100; }
+                    autoHealCounter = 0; if (hp < 3) { hp++; playSfx(sounds.heal); } else { score += 100; }
                 }
             }
             updateUI();
@@ -249,7 +247,7 @@
         function gameOver() {
             isGameRunning = false;
             clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
-            sounds.bgm.pause(); sounds.siren.pause(); sounds.damage.play();
+            sounds.bgm.pause(); sounds.siren.pause(); playSfx(sounds.damage);
             document.getElementById('player').classList.add('shivering');
             const best = parseInt(localStorage.getItem('akie_best_score') || '0');
             if (score > best) localStorage.setItem('akie_best_score', score);
@@ -269,7 +267,7 @@
             document.getElementById('combo-display').innerText = "コンボ: " + combo;
             if (hp === 1 && isGameRunning) {
                 document.getElementById('bg-danger').classList.add('danger-active');
-                if (sounds.siren.paused) sounds.siren.play();
+                if (soundEnabled && sounds.siren.paused) sounds.siren.play();
             } else {
                 document.getElementById('bg-danger').classList.remove('danger-active');
                 sounds.siren.pause();
