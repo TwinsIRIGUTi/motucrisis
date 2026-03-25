@@ -181,7 +181,6 @@
             document.getElementById('title-screen').style.display = 'none';
             if (soundEnabled) { sounds.bgm.currentTime = 0; sounds.bgm.play().catch(()=>{}); }
 
-            // モードに応じた初期設定
             if (selectedMode === 'easy') {
                 hp = 5; maxHp = 5; baseSpeed = 0.8;
                 spawnMotsuInterval = setInterval(spawnMotsu, 1800);
@@ -196,7 +195,7 @@
             clearInterval(playerAnimInterval);
             playerAnimInterval = setInterval(() => {
                 playerImgIdx = (playerImgIdx === 1) ? 2 : 1;
-                updatePlayerPos(); // 画像更新
+                updatePlayerPos();
             }, 1000);
 
             spawnEnemyInterval = setInterval(spawnEnemy, 2000);
