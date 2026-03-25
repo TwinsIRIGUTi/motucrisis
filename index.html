@@ -19,7 +19,6 @@
         
         .motsu, .enemy { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
         .fast-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.2); z-index: 8 !important; }
-        .item-umewari { filter: drop-shadow(0 0 12px #ff00ff); z-index: 6 !important; }
 
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
@@ -28,7 +27,12 @@
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; background-image: url('./images/title_bg.png'); background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
         .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
         
-        .char-selector { display: flex; gap: 10px; margin: 15px 0; }
+        .selector-label { font-size: 14px; margin-top: 10px; color: #ccc; }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 10px; }
+        .mode-btn { padding: 5px 15px; background: #333; border: 2px solid #555; color: #fff; border-radius: 5px; cursor: pointer; }
+        .mode-btn.selected { border-color: #ff0000; background: #600; }
+
+        .char-selector { display: flex; gap: 10px; margin: 10px 0; }
         .char-btn { width: 60px; height: 60px; border: 3px solid #555; border-radius: 10px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: rgba(255,255,255,0.1); cursor: pointer; }
         .char-btn.selected { border-color: #ff0000; background-color: rgba(255,0,0,0.3); box-shadow: 0 0 10px #ff0000; }
 
@@ -67,7 +71,13 @@
                 <span id="best-shogo-text">いちげんさん</span>
             </div>
             
-            <div style="font-size:14px; margin-top:10px;">店員を選んで開始：</div>
+            <div class="selector-label">難易度：</div>
+            <div class="mode-selector">
+                <button class="mode-btn" id="mode-easy" onclick="selectMode('easy')">イージー</button>
+                <button class="mode-btn selected" id="mode-hard" onclick="selectMode('hard')">ハード</button>
+            </div>
+
+            <div class="selector-label">店員：</div>
             <div class="char-selector">
                 <div class="char-btn selected" id="btn-A" onclick="selectChar('A')" style="background-image:url('./images/playerA1.png')"></div>
                 <div class="char-btn" id="btn-B" onclick="selectChar('B')" style="background-image:url('./images/playerB1.png')"></div>
@@ -99,6 +109,7 @@
         const totalLines = 5, lineWidth = 360 / totalLines;
         let soundEnabled = true;
         let selectedChar = 'A';
+        let selectedMode = 'hard';
 
         const sounds = {
             bgm: new Audio('./audio/bgm.mp3'),
@@ -113,6 +124,12 @@
         };
         sounds.bgm.loop = true; sounds.siren.loop = true;
 
+        function selectMode(m) {
+            selectedMode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById(`mode-${m}`).classList.add('selected');
+        }
+
         function selectChar(type) {
             selectedChar = type;
             document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
@@ -126,13 +143,17 @@
         function toggleSound() {
             soundEnabled = !soundEnabled;
             document.querySelectorAll('.sound-status-text').forEach(el => el.innerText = soundEnabled ? "ON" : "OFF");
-            if (!soundEnabled) { Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); }
-            else if (isGameRunning) { sounds.bgm.play().catch(()=>{}); }
+            if (!soundEnabled) { 
+                Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
+            } else if (isGameRunning) { 
+                sounds.bgm.play().catch(()=>{}); 
+                if(hp === 1) sounds.siren.play().catch(()=>{});
+            }
         }
 
         function playSfx(audio) { if (soundEnabled && audio) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
 
-        let score, hp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
+        let score, hp, maxHp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
         let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
         let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
 
@@ -160,17 +181,24 @@
             document.getElementById('title-screen').style.display = 'none';
             if (soundEnabled) { sounds.bgm.currentTime = 0; sounds.bgm.play().catch(()=>{}); }
 
-            score = 0; hp = 3; chainCount = 0; playerLine = 2; baseSpeed = 1.3; playerImgIdx = 1;
+            // モードに応じた初期設定
+            if (selectedMode === 'easy') {
+                hp = 5; maxHp = 5; baseSpeed = 0.8;
+                spawnMotsuInterval = setInterval(spawnMotsu, 1800);
+            } else {
+                hp = 3; maxHp = 3; baseSpeed = 1.3;
+                spawnMotsuInterval = setInterval(spawnMotsu, 1400);
+            }
+
+            score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1;
             updateUI(); updatePlayerPos();
             
             clearInterval(playerAnimInterval);
             playerAnimInterval = setInterval(() => {
                 playerImgIdx = (playerImgIdx === 1) ? 2 : 1;
-                const p = document.getElementById('player');
-                p.style.backgroundImage = `url('./images/player${selectedChar}${playerImgIdx}.png')`;
+                updatePlayerPos(); // 画像更新
             }, 1000);
 
-            spawnMotsuInterval = setInterval(spawnMotsu, 1400);
             spawnEnemyInterval = setInterval(spawnEnemy, 2000);
             bgInterval = setInterval(switchBackground, 30000);
         }
@@ -198,7 +226,7 @@
                 if (!isGameRunning) { motsu.remove(); return; }
                 top += speed; motsu.style.top = top + 'px';
                 if (top > 380 && top < 450 && line === playerLine) {
-                    if (isHeal) { if(hp < 3) hp++; playSfx(sounds.heal); }
+                    if (isHeal) { if(hp < maxHp) hp++; playSfx(sounds.heal); }
                     else { 
                         chainCount++; 
                         score += (isFast ? 50 : 10);
@@ -243,7 +271,7 @@
                 if (top > 380 && top < 450 && line === playerLine) {
                     hp--; playSfx(sounds.damage);
                     document.getElementById('damage-flash').style.opacity = "0.7";
-                    setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
+                    setTimeout(() => { if(document.getElementById('damage-flash')) document.getElementById('damage-flash').style.opacity = "0"; }, 150);
                     updateUI(); enemy.remove();
                     if (hp <= 0) gameOver(); return;
                 }
