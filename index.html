@@ -50,13 +50,11 @@
         .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: auto; z-index: 30; }
 
         .shogo-gold { color: #D4AF37 !important; } 
-        /* 称号の視認性修正: 臙脂の文字を白で囲う */
         .shogo-enji { color: #800000 !important; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0px 0px 5px #fff !important; font-weight: bold; } 
         .shogo-mizu { color: #00BFFF !important; } 
         .shogo-kiiro { color: #D19E1A !important; } 
 
         .action-btn { padding: 12px 20px; font-size: 20px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 180px; margin-top: 5px; outline: none; }
-        /* リザルト画面のボタン幅調整（1列表示用） */
         .result-btn { width: 240px !important; }
 
         #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; font-size: 14px; }
@@ -76,6 +74,7 @@
             <div class="bg-layer" style="background-image: url('./images/background4.png');"></div>
             <div class="bg-layer" style="background-image: url('./images/background5.png');"></div>
             <div class="bg-layer" style="background-image: url('./images/background6.png');"></div>
+            <div class="bg-layer" style="background-image: url('./images/background7.png');"></div>
         </div>
         <div id="bg-danger"></div>
         <div id="damage-flash"></div>
@@ -167,7 +166,7 @@
             const nextBgm = new Audio(bgmFiles[nextIndex]);
             nextBgm.loop = false;
             nextBgm.volume = 0;
-            const targetVolume = 0.3; // BGM音量を全体的に下げて修正
+            const targetVolume = 0.3; 
             nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
             if (currentBgm) {
                 let vol = targetVolume;
@@ -332,6 +331,7 @@
 
         function switchBackground() {
             const bgs = document.querySelectorAll('.bg-layer');
+            if (bgs.length === 0) return; // 安全策
             let nextIdx = Math.floor(Math.random() * bgs.length);
             bgs.forEach(b => b.classList.remove('bg-active')); bgs[nextIdx].classList.add('bg-active');
         }
