@@ -91,7 +91,7 @@
             
             <div class="how-to-play">
                 左右ボタンで移動。降ってくるモツを拾え！<br>
-                <b>赤オーラモツ</b>: 3倍速＆高得点 / <b>梅割り</b>: 体力回復＆得点<br>
+                <b>赤オーラ</b>: 3倍速＆高得点 / <b>梅割り</b>: 体力回復＆得点<br>
                 <b>twins(超レア)</b>: 体力最大回復＆1000点<br>
                 <b>靴・ボトル</b>: ダメージ！当たると体力が減るぞ。
             </div>
@@ -144,7 +144,7 @@
         let selectedChar = 'A', selectedMode = 'hard';
 
         const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3'];
-        let currentBgmIndex = -1, currentBgm = null;
+        let currentBgmIndex = -1, currentBgm = null, bgmStartTime = 0;
 
         const sounds = {
             damage: new Audio('./audio/damage.mp3'),
@@ -178,8 +178,19 @@
                     else { prevBgm.volume = vol; nextBgm.volume = targetVolume - vol; }
                 }, 100);
             } else { nextBgm.volume = targetVolume; }
-            currentBgm = nextBgm; currentBgmIndex = nextIndex; currentBgm.play().catch(()=>{});
+            currentBgm = nextBgm; currentBgmIndex = nextIndex; 
+            currentBgm.play().catch(()=>{});
+            bgmStartTime = Date.now(); // 1分30秒計測開始
         }
+
+        // BGM監視用タイマー
+        setInterval(() => {
+            if (isGameRunning && !isPaused && soundEnabled && currentBgm) {
+                if (Date.now() - bgmStartTime > 90000) { // 1分30秒経過
+                    playBgm();
+                }
+            }
+        }, 1000);
 
         function togglePause() {
             if (!isGameRunning) return;
@@ -229,7 +240,7 @@
         function playSfx(audio) { if (soundEnabled && audio && !isPaused) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
 
         let score, hp, maxHp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
-        let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval, bgmInterval;
+        let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
         let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
 
         const motsuList = ['./images/shiro.png', './images/hatsu.png', './images/lever.png', './images/abura.png', './images/kasira.png', './images/gatsu.png', './images/nankotsu.png'];
@@ -255,7 +266,6 @@
             isGameRunning = true; isPaused = false;
             document.getElementById('title-screen').style.display = 'none';
             playBgm();
-            bgmInterval = setInterval(() => { if(!isPaused) playBgm(); }, 60000);
             if (selectedMode === 'easy') { hp = 5; maxHp = 5; baseSpeed = 0.8; spawnMotsuInterval = setInterval(spawnMotsu, 1800); }
             else { hp = 3; maxHp = 3; baseSpeed = 1.3; spawnMotsuInterval = setInterval(spawnMotsu, 1400); }
             score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1;
@@ -289,7 +299,12 @@
                             if (hp === maxHp) { score += 300; } else { hp++; score += 100; }
                             playSfx(sounds.heal);
                         }
-                        else { chainCount++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 5; playSfx(sounds.get); }
+                        else { 
+                            chainCount++; 
+                            score += (isFast ? 50 : 10); 
+                            if (chainCount % 10 === 0) score += 30; // 10回ごとに30点加算に修正
+                            playSfx(sounds.get); 
+                        }
                         updateUI(); motsu.remove(); return;
                     }
                     if (top > 500) { if (!isHeal && !isTwins) { chainCount = 0; updateUI(); } motsu.remove(); return; }
@@ -305,8 +320,10 @@
             lastLineEnemy = line;
             const enemy = document.createElement('div'); enemy.className = 'enemy';
             const isShoe = Math.random() < 0.5;
+            const isEnemyFast = Math.random() < 0.15; // お邪魔キャラも赤オーラ版(高速版)が出るように修正
+            if (isEnemyFast) enemy.classList.add('fast-mode');
             enemy.style.backgroundImage = isShoe ? "url('./images/shoe.png')" : "url('./images/bottle.png')";
-            let speed = baseSpeed * 2.5, top = -70, startTime = Date.now();
+            let speed = baseSpeed * 2.5 * (isEnemyFast ? 2.5 : 1.0), top = -70, startTime = Date.now();
             enemy.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             document.getElementById('game-screen').appendChild(enemy);
             function fall() {
@@ -331,7 +348,7 @@
 
         function switchBackground() {
             const bgs = document.querySelectorAll('.bg-layer');
-            if (bgs.length === 0) return; // 安全策
+            if (bgs.length === 0) return;
             let nextIdx = Math.floor(Math.random() * bgs.length);
             bgs.forEach(b => b.classList.remove('bg-active')); bgs[nextIdx].classList.add('bg-active');
         }
@@ -339,7 +356,7 @@
         function gameOver() {
             isGameRunning = false;
             clearInterval(spawnMotsuInterval); clearInterval(spawnEnemyInterval); 
-            clearInterval(bgInterval); clearInterval(playerAnimInterval); clearInterval(bgmInterval);
+            clearInterval(bgInterval); clearInterval(playerAnimInterval);
             if (currentBgm) { currentBgm.pause(); currentBgm.onended = null; }
             sounds.siren.pause(); document.getElementById('player').classList.add('shivering');
             const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
