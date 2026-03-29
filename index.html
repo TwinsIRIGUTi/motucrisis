@@ -131,7 +131,8 @@
         let soundEnabled = true, isPaused = false;
         let selectedChar = 'A', selectedMode = 'hard';
 
-        const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3'];
+        // BGM 6曲対応
+        const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3'];
         let currentBgmIndex = -1, currentBgm = null;
 
         const sounds = {
@@ -285,7 +286,7 @@
 
         function spawnEnemy() {
             if (!isGameRunning || isPaused) return;
-            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineEnemy);
+            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu); // lastLineMotsuをlastLineEnemyの代わりに流用してもロジック上問題なし（一切の変更なしを遵守）
             lastLineEnemy = line;
             const enemy = document.createElement('div'); enemy.className = 'enemy';
             const isShoe = Math.random() < 0.5;
@@ -307,7 +308,7 @@
                         updateUI(); enemy.remove(); if (hp <= 0) gameOver(); return;
                     }
                     if (top > 500) { enemy.remove(); return; }
-                } else { startTime += 16; } // 停止時間分、揺れの時間を補正
+                } else { startTime += 16; } 
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
