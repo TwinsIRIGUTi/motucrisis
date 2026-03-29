@@ -130,7 +130,6 @@
         let selectedChar = 'A';
         let selectedMode = 'hard';
 
-        // BGMリストを3曲に更新
         const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3'];
         let currentBgmIndex = -1;
         let currentBgm = null;
@@ -152,20 +151,36 @@
             if (!soundEnabled) return;
             let nextIndex;
             do { nextIndex = Math.floor(Math.random() * bgmFiles.length); } while (nextIndex === currentBgmIndex && bgmFiles.length > 1);
+            
             const nextBgm = new Audio(bgmFiles[nextIndex]);
-            nextBgm.loop = true; nextBgm.volume = 0;
+            nextBgm.loop = false; // ループさせない
+            nextBgm.volume = 0;
+            
+            // 曲が終わったら自動的に次の曲を再生
+            nextBgm.onended = () => {
+                if (isGameRunning && soundEnabled) playBgm();
+            };
+
             if (currentBgm) {
                 let vol = 1.0;
+                const prevBgm = currentBgm;
                 const fadeInterval = setInterval(() => {
                     vol -= 0.05;
                     if (vol <= 0) {
                         clearInterval(fadeInterval);
-                        currentBgm.pause(); currentBgm = nextBgm; currentBgmIndex = nextIndex;
+                        prevBgm.pause();
+                        prevBgm.currentTime = 0;
                     } else {
-                        currentBgm.volume = vol; nextBgm.volume = 1.0 - vol;
+                        prevBgm.volume = vol;
+                        nextBgm.volume = 1.0 - vol;
                     }
                 }, 100);
-            } else { currentBgm = nextBgm; currentBgmIndex = nextIndex; currentBgm.volume = 1.0; }
+            } else {
+                nextBgm.volume = 1.0;
+            }
+
+            currentBgm = nextBgm;
+            currentBgmIndex = nextIndex;
             currentBgm.play().catch(()=>{});
         }
 
@@ -226,6 +241,7 @@
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
             playBgm();
+            // 定期的な切り替えタイマー（60秒）を維持しつつ、曲終了時にも切り替わるように設定
             bgmInterval = setInterval(playBgm, 60000);
             if (selectedMode === 'easy') {
                 hp = 5; maxHp = 5; baseSpeed = 0.8;
@@ -321,7 +337,11 @@
             isGameRunning = false;
             clearInterval(spawnMotsuInterval); clearInterval(spawnEnemyInterval); 
             clearInterval(bgInterval); clearInterval(playerAnimInterval); clearInterval(bgmInterval);
-            if (currentBgm) currentBgm.pause(); sounds.siren.pause();
+            if (currentBgm) {
+                currentBgm.pause();
+                currentBgm.onended = null;
+            }
+            sounds.siren.pause();
             document.getElementById('player').classList.add('shivering');
             const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
             if (score > best) localStorage.setItem('motsu_best_score', score);
