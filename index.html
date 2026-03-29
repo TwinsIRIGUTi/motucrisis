@@ -130,7 +130,8 @@
         let selectedChar = 'A';
         let selectedMode = 'hard';
 
-        const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3'];
+        // BGMリストを3曲に更新
+        const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3'];
         let currentBgmIndex = -1;
         let currentBgm = null;
 
@@ -139,7 +140,7 @@
             siren: new Audio('./audio/siren.mp3'),
             heal: new Audio('./audio/heal.mp3'),
             get: new Audio('./audio/get.mp3'),
-            twins: new Audio('./audio/twins.mp3'), // twins音追加
+            twins: new Audio('./audio/twins.mp3'),
             selectA: new Audio('./audio/selectA.mp3'),
             selectB: new Audio('./audio/selectB.mp3'),
             selectC: new Audio('./audio/selectC.mp3'),
@@ -265,8 +266,7 @@
                 top += speed; motsu.style.top = top + 'px';
                 if (top > 380 && top < 450 && line === playerLine) {
                     if (isTwins) { 
-                        hp = Math.min(maxHp, hp + 3); score += 1000; 
-                        playSfx(sounds.twins); // twins専用音を再生
+                        hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins);
                     } else if (isHeal) { 
                         if(hp < maxHp) hp++; playSfx(sounds.heal); 
                     } else { 
