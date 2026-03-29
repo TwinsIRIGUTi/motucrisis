@@ -17,8 +17,9 @@
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
         #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
         
-        .motsu, .enemy { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        .motsu, .enemy, .special { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
         .fast-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.2); z-index: 8 !important; }
+        .twins-effect { filter: drop-shadow(0 0 20px #ffd700); z-index: 9 !important; }
 
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
@@ -77,7 +78,7 @@
                 <button class="mode-btn selected" id="mode-hard" onclick="selectMode('hard')">ハード</button>
             </div>
 
-            <div class="selector-label">店員：</div>
+            <div class="selector-label">呑んべぇ：</div>
             <div class="char-selector">
                 <div class="char-btn selected" id="btn-A" onclick="selectChar('A')" style="background-image:url('./images/playerA1.png')"></div>
                 <div class="char-btn" id="btn-B" onclick="selectChar('B')" style="background-image:url('./images/playerB1.png')"></div>
@@ -208,12 +209,20 @@
             lastLineMotsu = line;
 
             const motsu = document.createElement('div');
-            motsu.className = 'motsu';
-            let img = motsuList[Math.floor(Math.random() * motsuList.length)];
-            let isHeal = Math.random() < 0.05; 
-            if (isHeal) img = './images/umewari.png';
+            let isTwins = Math.random() < 0.01; // 1/100の確率でtwins
+            let isHeal = !isTwins && Math.random() < 0.05; 
             
-            let isFast = Math.random() < 0.15; 
+            let img;
+            if (isTwins) {
+                motsu.className = 'special';
+                motsu.classList.add('twins-effect');
+                img = './images/twins.png';
+            } else {
+                motsu.className = 'motsu';
+                img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)];
+            }
+            
+            let isFast = !isTwins && Math.random() < 0.15; 
             let speed = baseSpeed * (isFast ? 3.0 : 1.0);
             if (isFast) motsu.classList.add('fast-mode');
 
@@ -225,8 +234,14 @@
                 if (!isGameRunning) { motsu.remove(); return; }
                 top += speed; motsu.style.top = top + 'px';
                 if (top > 380 && top < 450 && line === playerLine) {
-                    if (isHeal) { if(hp < maxHp) hp++; playSfx(sounds.heal); }
-                    else { 
+                    if (isTwins) {
+                        hp = Math.min(maxHp, hp + 3);
+                        score += 1000;
+                        playSfx(sounds.heal);
+                    } else if (isHeal) {
+                        if(hp < maxHp) hp++;
+                        playSfx(sounds.heal);
+                    } else { 
                         chainCount++; 
                         score += (isFast ? 50 : 10);
                         if (chainCount % 10 === 0) score += 5;
@@ -235,7 +250,7 @@
                     updateUI(); motsu.remove(); return;
                 }
                 if (top > 500) {
-                    if (!isHeal) { chainCount = 0; updateUI(); }
+                    if (!isHeal && !isTwins) { chainCount = 0; updateUI(); }
                     motsu.remove(); return;
                 }
                 requestAnimationFrame(fall);
