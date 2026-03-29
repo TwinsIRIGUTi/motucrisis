@@ -51,7 +51,8 @@
         .action-btn { padding: 12px 20px; font-size: 20px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 180px; margin-top: 5px; outline: none; }
         
         #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; font-size: 14px; }
-        .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; cursor: pointer; touch-action: none; }
+        .btn { width: 100px; height: 70px; font-size: 30px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 15px; cursor: pointer; touch-action: none; }
+        .pause-btn { width: 80px; height: 70px; font-size: 14px; background: #555; border-bottom-color: #333; }
 
         #result-screen { display: none; background: rgba(0,0,0,0.9); }
     </style>
@@ -119,20 +120,19 @@
         <div id="player"></div>
     </div>
 
-    <div style="margin-top:15px; display:flex; gap:30px;">
+    <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
         <button class="btn" onpointerdown="moveLeft()">◀</button>
+        <button class="btn pause-btn" id="btn-pause" onpointerdown="togglePause()">一時停止</button>
         <button class="btn" onpointerdown="moveRight()">▶</button>
     </div>
 
     <script>
         const totalLines = 5, lineWidth = 360 / totalLines;
-        let soundEnabled = true;
-        let selectedChar = 'A';
-        let selectedMode = 'hard';
+        let soundEnabled = true, isPaused = false;
+        let selectedChar = 'A', selectedMode = 'hard';
 
         const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3'];
-        let currentBgmIndex = -1;
-        let currentBgm = null;
+        let currentBgmIndex = -1, currentBgm = null;
 
         const sounds = {
             damage: new Audio('./audio/damage.mp3'),
@@ -151,37 +151,38 @@
             if (!soundEnabled) return;
             let nextIndex;
             do { nextIndex = Math.floor(Math.random() * bgmFiles.length); } while (nextIndex === currentBgmIndex && bgmFiles.length > 1);
-            
             const nextBgm = new Audio(bgmFiles[nextIndex]);
-            nextBgm.loop = false; // ループさせない
+            nextBgm.loop = false;
             nextBgm.volume = 0;
-            
-            // 曲が終わったら自動的に次の曲を再生
-            nextBgm.onended = () => {
-                if (isGameRunning && soundEnabled) playBgm();
-            };
-
+            nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
             if (currentBgm) {
                 let vol = 1.0;
                 const prevBgm = currentBgm;
                 const fadeInterval = setInterval(() => {
+                    if (isPaused) return;
                     vol -= 0.05;
-                    if (vol <= 0) {
-                        clearInterval(fadeInterval);
-                        prevBgm.pause();
-                        prevBgm.currentTime = 0;
-                    } else {
-                        prevBgm.volume = vol;
-                        nextBgm.volume = 1.0 - vol;
-                    }
+                    if (vol <= 0) { clearInterval(fadeInterval); prevBgm.pause(); prevBgm.currentTime = 0; }
+                    else { prevBgm.volume = vol; nextBgm.volume = 1.0 - vol; }
                 }, 100);
-            } else {
-                nextBgm.volume = 1.0;
-            }
+            } else { nextBgm.volume = 1.0; }
+            currentBgm = nextBgm; currentBgmIndex = nextIndex; currentBgm.play().catch(()=>{});
+        }
 
-            currentBgm = nextBgm;
-            currentBgmIndex = nextIndex;
-            currentBgm.play().catch(()=>{});
+        function togglePause() {
+            if (!isGameRunning) return;
+            isPaused = !isPaused;
+            const btn = document.getElementById('btn-pause');
+            btn.innerText = isPaused ? "再開" : "一時停止";
+            btn.style.background = isPaused ? "#aa0000" : "#555";
+            if (isPaused) {
+                if (currentBgm) currentBgm.pause();
+                sounds.siren.pause();
+            } else {
+                if (soundEnabled) {
+                    if (currentBgm) currentBgm.play().catch(()=>{});
+                    if (hp === 1) sounds.siren.play().catch(()=>{});
+                }
+            }
         }
 
         function selectMode(m) {
@@ -206,13 +207,13 @@
             if (!soundEnabled) { 
                 if (currentBgm) currentBgm.pause();
                 Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
-            } else if (isGameRunning) { 
+            } else if (isGameRunning && !isPaused) { 
                 if (currentBgm) currentBgm.play().catch(()=>{});
                 if(hp === 1) sounds.siren.play().catch(()=>{});
             }
         }
 
-        function playSfx(audio) { if (soundEnabled && audio) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
+        function playSfx(audio) { if (soundEnabled && audio && !isPaused) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
 
         let score, hp, maxHp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
         let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval, bgmInterval;
@@ -238,89 +239,75 @@
 
         function startGame() {
             if (isGameRunning) return;
-            isGameRunning = true;
+            isGameRunning = true; isPaused = false;
             document.getElementById('title-screen').style.display = 'none';
             playBgm();
-            // 定期的な切り替えタイマー（60秒）を維持しつつ、曲終了時にも切り替わるように設定
-            bgmInterval = setInterval(playBgm, 60000);
-            if (selectedMode === 'easy') {
-                hp = 5; maxHp = 5; baseSpeed = 0.8;
-                spawnMotsuInterval = setInterval(spawnMotsu, 1800);
-            } else {
-                hp = 3; maxHp = 3; baseSpeed = 1.3;
-                spawnMotsuInterval = setInterval(spawnMotsu, 1400);
-            }
+            bgmInterval = setInterval(() => { if(!isPaused) playBgm(); }, 60000);
+            if (selectedMode === 'easy') { hp = 5; maxHp = 5; baseSpeed = 0.8; spawnMotsuInterval = setInterval(spawnMotsu, 1800); }
+            else { hp = 3; maxHp = 3; baseSpeed = 1.3; spawnMotsuInterval = setInterval(spawnMotsu, 1400); }
             score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1;
             updateUI(); updatePlayerPos();
-            clearInterval(playerAnimInterval);
-            playerAnimInterval = setInterval(() => { playerImgIdx = (playerImgIdx === 1) ? 2 : 1; updatePlayerPos(); }, 1000);
+            playerAnimInterval = setInterval(() => { if(!isPaused) { playerImgIdx = (playerImgIdx === 1) ? 2 : 1; updatePlayerPos(); } }, 1000);
             spawnEnemyInterval = setInterval(spawnEnemy, 2000);
-            bgInterval = setInterval(switchBackground, 30000);
+            bgInterval = setInterval(() => { if(!isPaused) switchBackground(); }, 30000);
         }
 
         function spawnMotsu() {
-            if (!isGameRunning) return;
+            if (!isGameRunning || isPaused) return;
             let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu);
             lastLineMotsu = line;
             const motsu = document.createElement('div');
             let isTwins = Math.random() < 0.01; 
-            let isHeal = !isTwins && Math.random() < 0.05; 
-            let img;
-            if (isTwins) {
-                motsu.className = 'special'; motsu.classList.add('twins-effect'); img = './images/twins.png';
-            } else {
-                motsu.className = 'motsu'; img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)];
-            }
-            let isFast = !isTwins && Math.random() < 0.15; 
-            let speed = baseSpeed * (isFast ? 3.0 : 1.0);
+            let isHeal = !isTwins && Math.random() < 0.05, img;
+            if (isTwins) { motsu.className = 'special'; motsu.classList.add('twins-effect'); img = './images/twins.png'; }
+            else { motsu.className = 'motsu'; img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)]; }
+            let isFast = !isTwins && Math.random() < 0.15, speed = baseSpeed * (isFast ? 3.0 : 1.0);
             if (isFast) motsu.classList.add('fast-mode');
             motsu.style.backgroundImage = `url('${img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             let top = -70; document.getElementById('game-screen').appendChild(motsu);
             function fall() {
                 if (!isGameRunning) { motsu.remove(); return; }
-                top += speed; motsu.style.top = top + 'px';
-                if (top > 380 && top < 450 && line === playerLine) {
-                    if (isTwins) { 
-                        hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins);
-                    } else if (isHeal) { 
-                        if(hp < maxHp) hp++; playSfx(sounds.heal); 
-                    } else { 
-                        chainCount++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 5; playSfx(sounds.get); 
+                if (!isPaused) {
+                    top += speed; motsu.style.top = top + 'px';
+                    if (top > 380 && top < 450 && line === playerLine) {
+                        if (isTwins) { hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins); }
+                        else if (isHeal) { if(hp < maxHp) hp++; playSfx(sounds.heal); }
+                        else { chainCount++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 5; playSfx(sounds.get); }
+                        updateUI(); motsu.remove(); return;
                     }
-                    updateUI(); motsu.remove(); return;
+                    if (top > 500) { if (!isHeal && !isTwins) { chainCount = 0; updateUI(); } motsu.remove(); return; }
                 }
-                if (top > 500) { if (!isHeal && !isTwins) { chainCount = 0; updateUI(); } motsu.remove(); return; }
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
         }
 
         function spawnEnemy() {
-            if (!isGameRunning) return;
+            if (!isGameRunning || isPaused) return;
             let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineEnemy);
             lastLineEnemy = line;
-            const enemy = document.createElement('div');
-            enemy.className = 'enemy';
+            const enemy = document.createElement('div'); enemy.className = 'enemy';
             const isShoe = Math.random() < 0.5;
             enemy.style.backgroundImage = isShoe ? "url('./images/shoe.png')" : "url('./images/bottle.png')";
-            let speed = baseSpeed * 2.5;
+            let speed = baseSpeed * 2.5, top = -70, startTime = Date.now();
             enemy.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
-            let top = -70, startTime = Date.now();
             document.getElementById('game-screen').appendChild(enemy);
             function fall() {
                 if (!isGameRunning) { enemy.remove(); return; }
-                top += speed;
-                let horizontal = isShoe ? Math.sin((Date.now() - startTime) / 100) * 15 : 0;
-                enemy.style.top = top + 'px';
-                enemy.style.transform = `translateX(${horizontal}px) rotate(${isShoe ? (top % 360) : 0}deg)`;
-                if (top > 380 && top < 450 && line === playerLine) {
-                    hp--; playSfx(sounds.damage);
-                    document.getElementById('damage-flash').style.opacity = "0.7";
-                    setTimeout(() => { if(document.getElementById('damage-flash')) document.getElementById('damage-flash').style.opacity = "0"; }, 150);
-                    updateUI(); enemy.remove(); if (hp <= 0) gameOver(); return;
-                }
-                if (top > 500) { enemy.remove(); return; }
+                if (!isPaused) {
+                    top += speed;
+                    let horizontal = isShoe ? Math.sin((Date.now() - startTime) / 100) * 15 : 0;
+                    enemy.style.top = top + 'px';
+                    enemy.style.transform = `translateX(${horizontal}px) rotate(${isShoe ? (top % 360) : 0}deg)`;
+                    if (top > 380 && top < 450 && line === playerLine) {
+                        hp--; playSfx(sounds.damage);
+                        document.getElementById('damage-flash').style.opacity = "0.7";
+                        setTimeout(() => { if(document.getElementById('damage-flash')) document.getElementById('damage-flash').style.opacity = "0"; }, 150);
+                        updateUI(); enemy.remove(); if (hp <= 0) gameOver(); return;
+                    }
+                    if (top > 500) { enemy.remove(); return; }
+                } else { startTime += 16; } // 停止時間分、揺れの時間を補正
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
@@ -329,20 +316,15 @@
         function switchBackground() {
             const bgs = document.querySelectorAll('.bg-layer');
             let nextIdx = Math.floor(Math.random() * bgs.length);
-            bgs.forEach(b => b.classList.remove('bg-active'));
-            bgs[nextIdx].classList.add('bg-active');
+            bgs.forEach(b => b.classList.remove('bg-active')); bgs[nextIdx].classList.add('bg-active');
         }
 
         function gameOver() {
             isGameRunning = false;
             clearInterval(spawnMotsuInterval); clearInterval(spawnEnemyInterval); 
             clearInterval(bgInterval); clearInterval(playerAnimInterval); clearInterval(bgmInterval);
-            if (currentBgm) {
-                currentBgm.pause();
-                currentBgm.onended = null;
-            }
-            sounds.siren.pause();
-            document.getElementById('player').classList.add('shivering');
+            if (currentBgm) { currentBgm.pause(); currentBgm.onended = null; }
+            sounds.siren.pause(); document.getElementById('player').classList.add('shivering');
             const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
             if (score > best) localStorage.setItem('motsu_best_score', score);
             const shogo = getShogoData(score);
@@ -358,11 +340,8 @@
             document.getElementById('chain-display').innerText = "連続: " + chainCount;
             if (hp === 1 && isGameRunning) {
                 document.getElementById('bg-danger').classList.add('danger-active');
-                if (soundEnabled && sounds.siren.paused) sounds.siren.play().catch(()=>{});
-            } else {
-                document.getElementById('bg-danger').classList.remove('danger-active');
-                sounds.siren.pause();
-            }
+                if (soundEnabled && sounds.siren.paused && !isPaused) sounds.siren.play().catch(()=>{});
+            } else { document.getElementById('bg-danger').classList.remove('danger-active'); sounds.siren.pause(); }
         }
 
         function updatePlayerPos() {
@@ -371,8 +350,8 @@
             p.style.backgroundImage = `url('./images/player${selectedChar}${playerImgIdx}.png')`;
         }
 
-        window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(); } };
-        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning) { playerLine++; updatePlayerPos(); } };
+        window.moveLeft = () => { if(playerLine > 0 && isGameRunning && !isPaused) { playerLine--; updatePlayerPos(); } };
+        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning && !isPaused) { playerLine++; updatePlayerPos(); } };
     </script>
 </body>
 </html>
