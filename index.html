@@ -27,7 +27,6 @@
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); background-image: url('./images/title_bg.png'); background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; text-align: center; }
         
-        /* カッコいい2段タイトル */
         .crisis-title-container { margin-bottom: 10px; perspective: 500px; }
         .title-part { font-family: 'Arial Black', sans-serif; font-weight: 900; font-style: italic; text-transform: uppercase; display: block; line-height: 0.8; position: relative; }
         .title-motsu { font-size: 44px; color: #fff; text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15); animation: titleFloatMotsu 3s ease-in-out infinite; }
@@ -51,12 +50,15 @@
         .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: auto; z-index: 30; }
 
         .shogo-gold { color: #D4AF37 !important; } 
-        .shogo-enji { color: #800000 !important; } 
+        /* 称号の視認性修正: 臙脂の文字を白で囲う */
+        .shogo-enji { color: #800000 !important; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0px 0px 5px #fff !important; font-weight: bold; } 
         .shogo-mizu { color: #00BFFF !important; } 
         .shogo-kiiro { color: #D19E1A !important; } 
 
         .action-btn { padding: 12px 20px; font-size: 20px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 180px; margin-top: 5px; outline: none; }
-        
+        /* リザルト画面のボタン幅調整（1列表示用） */
+        .result-btn { width: 240px !important; }
+
         #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; font-size: 14px; }
         .btn { width: 100px; height: 70px; font-size: 30px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 15px; cursor: pointer; touch-action: none; }
         .pause-btn { width: 80px; height: 70px; font-size: 14px; background: #555; border-bottom-color: #333; }
@@ -90,8 +92,8 @@
             
             <div class="how-to-play">
                 左右ボタンで移動。降ってくるモツを拾え！<br>
-                <b>赤オーラモツ</b>: 3倍速＆高得点 / <b>梅割り</b>: 体力1回復<br>
-                <b>twins(超レア)</b>: 体力最大3回復＆1000点<br>
+                <b>赤オーラモツ</b>: 3倍速＆高得点 / <b>梅割り</b>: 体力回復＆得点<br>
+                <b>twins(超レア)</b>: 体力最大回復＆1000点<br>
                 <b>靴・ボトル</b>: ダメージ！当たると体力が減るぞ。
             </div>
 
@@ -117,7 +119,7 @@
             <h1 style="color:#ff0000; font-size:40px; margin:0;">宴 終 了</h1>
             <div id="final-score" style="font-size:24px; margin:15px 0;">0 点</div>
             <div id="final-shogo" style="font-size:18px; margin-bottom:20px;"></div>
-            <button class="action-btn" onclick="location.reload()">もう一杯！（戻る）</button>
+            <button class="action-btn result-btn" onclick="location.reload()">もう一杯！（戻る）</button>
         </div>
 
         <div id="ui-layer">
@@ -142,7 +144,6 @@
         let soundEnabled = true, isPaused = false;
         let selectedChar = 'A', selectedMode = 'hard';
 
-        // BGM 6曲
         const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3'];
         let currentBgmIndex = -1, currentBgm = null;
 
@@ -166,17 +167,18 @@
             const nextBgm = new Audio(bgmFiles[nextIndex]);
             nextBgm.loop = false;
             nextBgm.volume = 0;
+            const targetVolume = 0.3; // BGM音量を全体的に下げて修正
             nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
             if (currentBgm) {
-                let vol = 1.0;
+                let vol = targetVolume;
                 const prevBgm = currentBgm;
                 const fadeInterval = setInterval(() => {
                     if (isPaused) return;
-                    vol -= 0.05;
+                    vol -= 0.02;
                     if (vol <= 0) { clearInterval(fadeInterval); prevBgm.pause(); prevBgm.currentTime = 0; }
-                    else { prevBgm.volume = vol; nextBgm.volume = 1.0 - vol; }
+                    else { prevBgm.volume = vol; nextBgm.volume = targetVolume - vol; }
                 }, 100);
-            } else { nextBgm.volume = 1.0; }
+            } else { nextBgm.volume = targetVolume; }
             currentBgm = nextBgm; currentBgmIndex = nextIndex; currentBgm.play().catch(()=>{});
         }
 
@@ -284,7 +286,10 @@
                     top += speed; motsu.style.top = top + 'px';
                     if (top > 380 && top < 450 && line === playerLine) {
                         if (isTwins) { hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins); }
-                        else if (isHeal) { if(hp < maxHp) hp++; playSfx(sounds.heal); }
+                        else if (isHeal) {
+                            if (hp === maxHp) { score += 300; } else { hp++; score += 100; }
+                            playSfx(sounds.heal);
+                        }
                         else { chainCount++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 5; playSfx(sounds.get); }
                         updateUI(); motsu.remove(); return;
                     }
