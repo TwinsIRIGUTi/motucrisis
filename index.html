@@ -17,9 +17,16 @@
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
         #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
         
-        .motsu, .enemy, .special { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        /* twins（.special）はプルプルさせないように分離 */
+        .motsu, .enemy { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        /* プルプルしない twins 専用クラス */
+        .special { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; }
+
         .fast-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.2); z-index: 8 !important; }
-        .twins-effect { filter: drop-shadow(0 0 20px #ffd700); z-index: 9 !important; }
+        
+        /* 目に優しい金色/黄色のオーラ演出に変更 */
+        .twins-effect { filter: drop-shadow(0 0 20px #fffacd); z-index: 9 !important; animation: twinsGlow 1.5s ease-in-out infinite; }
+        @keyframes twinsGlow { 0%, 100% { filter: drop-shadow(0 0 15px #fffacd) brightness(1.1); } 50% { filter: drop-shadow(0 0 25px #ffeb3b) brightness(1.3); } }
 
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
@@ -46,8 +53,12 @@
         .char-btn { width: 50px; height: 50px; border: 3px solid #555; border-radius: 10px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: rgba(255,255,255,0.1); cursor: pointer; }
         .char-btn.selected { border-color: #ff0000; background-color: rgba(255,0,0,0.3); box-shadow: 0 0 10px #ff0000; }
 
+        .volume-container { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 15px; border: 1px solid #777; margin-bottom: 5px; }
+        .volume-container input[type=range] { width: 80px; accent-color: #ff0000; cursor: pointer; }
+        .vol-label { font-size: 10px; color: #fff; }
+
         .sound-switch { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid #777; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .ingame-sound-switch { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: auto; z-index: 30; }
+        .ingame-controls { position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: auto; z-index: 30; }
 
         .shogo-gold { color: #D4AF37 !important; } 
         .shogo-enji { color: #800000 !important; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0px 0px 5px #fff !important; font-weight: bold; } 
@@ -110,6 +121,11 @@
                 <div class="char-btn" id="btn-D" onclick="selectChar('D')" style="background-image:url('./images/playerD1.png')"></div>
             </div>
 
+            <div class="volume-container">
+                <span class="vol-label">音量</span>
+                <input type="range" class="master-volume-slider" min="0" max="1" step="0.05" value="0.3" oninput="updateMasterVolume(this.value)">
+            </div>
+
             <div class="sound-switch" onpointerdown="toggleSound()">音設定: <span class="sound-status-text">ON</span></div>
             <button class="action-btn" onpointerdown="startGame()">宴開始</button>
         </div>
@@ -125,8 +141,15 @@
             <div id="hp-display">体力: ❤️❤️❤️</div>
             <div id="score-board">0点</div>
             <div id="chain-display">連続: 0</div>
-            <div class="sound-switch ingame-sound-switch" onpointerdown="toggleSound()">
-                音: <span class="sound-status-text">ON</span>
+            
+            <div class="ingame-controls">
+                <div class="volume-container">
+                    <span class="vol-label">音量</span>
+                    <input type="range" class="master-volume-slider" min="0" max="1" step="0.05" value="0.3" oninput="updateMasterVolume(this.value)">
+                </div>
+                <div class="sound-switch" style="margin-bottom:0;" onpointerdown="toggleSound()">
+                    音: <span class="sound-status-text">ON</span>
+                </div>
             </div>
         </div>
         <div id="player"></div>
@@ -140,7 +163,7 @@
 
     <script>
         const totalLines = 5, lineWidth = 360 / totalLines;
-        let soundEnabled = true, isPaused = false;
+        let soundEnabled = true, isPaused = false, masterVolume = 0.3;
         let selectedChar = 'A', selectedMode = 'hard';
 
         const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3'];
@@ -158,7 +181,13 @@
             selectD: new Audio('./audio/selectD.mp3')
         };
         sounds.siren.loop = true;
-        Object.values(sounds).forEach(s => s.volume = 0.3);
+
+        function updateMasterVolume(val) {
+            masterVolume = parseFloat(val);
+            document.querySelectorAll('.master-volume-slider').forEach(s => s.value = masterVolume);
+            if (currentBgm) currentBgm.volume = masterVolume / 2;
+            Object.values(sounds).forEach(s => s.volume = masterVolume);
+        }
 
         function playBgm() {
             if (!soundEnabled) return;
@@ -167,7 +196,7 @@
             const nextBgm = new Audio(bgmFiles[nextIndex]);
             nextBgm.loop = false;
             nextBgm.volume = 0;
-            const targetVolume = 0.15;
+            const targetVolume = masterVolume / 2;
             nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
             if (currentBgm) {
                 let vol = targetVolume;
@@ -225,7 +254,7 @@
             document.getElementById(`btn-${type}`).classList.add('selected');
             if (soundEnabled) {
                 const s = sounds[`select${type}`];
-                if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
+                if (s) { s.volume = masterVolume; s.currentTime = 0; s.play().catch(()=>{}); }
             }
         }
 
@@ -236,17 +265,17 @@
                 if (currentBgm) currentBgm.pause();
                 Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
             } else if (isGameRunning && !isPaused) { 
-                if (currentBgm) currentBgm.play().catch(()=>{});
-                if(hp === 1) sounds.siren.play().catch(()=>{});
+                if (currentBgm) { currentBgm.volume = masterVolume / 2; currentBgm.play().catch(()=>{}); }
+                if(hp === 1) { sounds.siren.volume = masterVolume; sounds.siren.play().catch(()=>{}); }
             }
         }
 
-        function playSfx(audio) { if (soundEnabled && audio && !isPaused) { audio.currentTime = 0; audio.play().catch(()=>{}); } }
+        function playSfx(audio) { if (soundEnabled && audio && !isPaused) { audio.volume = masterVolume; audio.currentTime = 0; audio.play().catch(()=>{}); } }
 
         let score, hp, maxHp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
         let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
         let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
-        let catchMotsuCounter = 0; // 梅割り調整用のカウンタ
+        let catchMotsuCounter = 0;
 
         const motsuList = ['./images/shiro.png', './images/hatsu.png', './images/lever.png', './images/abura.png', './images/kasira.png', './images/gatsu.png', './images/nankotsu.png'];
 
@@ -264,6 +293,7 @@
             const shogo = getShogoData(best);
             const el = document.getElementById('best-shogo-text');
             el.innerText = shogo.text; el.className = shogo.class;
+            updateMasterVolume(0.3);
         };
 
         function startGame() {
@@ -285,20 +315,21 @@
             let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu);
             lastLineMotsu = line;
             const motsu = document.createElement('div');
-            
             let isTwins = Math.random() < 0.01; 
-            // 修正：モツを14個取るごとに一定の確率(5%)で梅割りが出るように変更
             let isHeal = false;
             if (!isTwins && catchMotsuCounter >= 14) {
-                if (Math.random() < 0.05) {
-                    isHeal = true;
-                    catchMotsuCounter = 0; // 梅割りが出たらカウンタをリセット
-                }
+                if (Math.random() < 0.05) { isHeal = true; catchMotsuCounter = 0; }
             }
-            
             let img;
-            if (isTwins) { motsu.className = 'special'; motsu.classList.add('twins-effect'); img = './images/twins.png'; }
-            else { motsu.className = 'motsu'; img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)]; }
+            if (isTwins) { 
+                // twinsはプルプルアニメーションなしの .special クラスを使用
+                motsu.className = 'special'; 
+                motsu.classList.add('twins-effect'); 
+                img = './images/twins.png'; 
+            } else { 
+                motsu.className = 'motsu'; 
+                img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)]; 
+            }
             let isFast = !isTwins && Math.random() < 0.15, speed = baseSpeed * (isFast ? 3.0 : 1.0);
             if (isFast) motsu.classList.add('fast-mode');
             motsu.style.backgroundImage = `url('${img}')`;
@@ -310,17 +341,8 @@
                     top += speed; motsu.style.top = top + 'px';
                     if (top > 380 && top < 450 && line === playerLine) {
                         if (isTwins) { hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins); }
-                        else if (isHeal) {
-                            if (hp === maxHp) { score += 300; } else { hp++; score += 100; }
-                            playSfx(sounds.heal);
-                        }
-                        else { 
-                            chainCount++; 
-                            catchMotsuCounter++; // モツを拾うとカウント
-                            score += (isFast ? 50 : 10); 
-                            if (chainCount % 10 === 0) score += 30;
-                            playSfx(sounds.get); 
-                        }
+                        else if (isHeal) { if (hp === maxHp) { score += 300; } else { hp++; score += 100; } playSfx(sounds.heal); }
+                        else { chainCount++; catchMotsuCounter++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 30; playSfx(sounds.get); }
                         updateUI(); motsu.remove(); return;
                     }
                     if (top > 500) { if (!isHeal && !isTwins) { chainCount = 0; updateUI(); } motsu.remove(); return; }
@@ -390,7 +412,7 @@
             document.getElementById('chain-display').innerText = "連続: " + chainCount;
             if (hp === 1 && isGameRunning) {
                 document.getElementById('bg-danger').classList.add('danger-active');
-                if (soundEnabled && sounds.siren.paused && !isPaused) sounds.siren.play().catch(()=>{});
+                if (soundEnabled && sounds.siren.paused && !isPaused) { sounds.siren.volume = masterVolume; sounds.siren.play().catch(()=>{}); }
             } else { document.getElementById('bg-danger').classList.remove('danger-active'); sounds.siren.pause(); }
         }
 
