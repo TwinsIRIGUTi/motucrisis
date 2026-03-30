@@ -149,7 +149,6 @@
         let soundEnabled = true, isPaused = false, masterVolume = 0.1;
         let selectedChar = 'A', selectedMode = 'hard';
 
-        // BGMリストを7曲に更新
         const bgmFiles = [
             './audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', 
             './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3',
@@ -172,7 +171,8 @@
 
         function updateMasterVolume(val) {
             masterVolume = parseFloat(val);
-            if (currentBgm) currentBgm.volume = masterVolume / 2;
+            // BGMの音量をさらに主張しないレベル(1/5)に設定
+            if (currentBgm) currentBgm.volume = masterVolume / 5;
             Object.values(sounds).forEach(s => s.volume = masterVolume);
         }
 
@@ -183,14 +183,15 @@
             const nextBgm = new Audio(bgmFiles[nextIndex]);
             nextBgm.loop = false;
             nextBgm.volume = 0;
-            const targetVolume = masterVolume / 2;
+            // BGMターゲット音量を1/5に変更
+            const targetVolume = masterVolume / 5;
             nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
             if (currentBgm) {
                 let vol = targetVolume;
                 const prevBgm = currentBgm;
                 const fadeInterval = setInterval(() => {
                     if (isPaused) return;
-                    vol -= 0.01;
+                    vol -= 0.005; // ゆっくりフェード
                     if (vol <= 0) { clearInterval(fadeInterval); prevBgm.pause(); prevBgm.currentTime = 0; }
                     else { prevBgm.volume = Math.max(0, vol); nextBgm.volume = Math.min(targetVolume, targetVolume - vol); }
                 }, 100);
@@ -252,7 +253,7 @@
                 if (currentBgm) currentBgm.pause();
                 Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
             } else if (isGameRunning && !isPaused) { 
-                if (currentBgm) { currentBgm.volume = masterVolume / 2; currentBgm.play().catch(()=>{}); }
+                if (currentBgm) { currentBgm.volume = masterVolume / 5; currentBgm.play().catch(()=>{}); }
                 if(hp === 1) { sounds.siren.volume = masterVolume; sounds.siren.play().catch(()=>{}); }
             }
         }
