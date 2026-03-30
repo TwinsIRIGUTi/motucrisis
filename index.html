@@ -146,11 +146,15 @@
 
     <script>
         const totalLines = 5, lineWidth = 360 / totalLines;
-        // 音量を引き下げ (効果音:0.1, BGMはその半分)
         let soundEnabled = true, isPaused = false, masterVolume = 0.1;
         let selectedChar = 'A', selectedMode = 'hard';
 
-        const bgmFiles = ['./audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3'];
+        // BGMリストを7曲に更新
+        const bgmFiles = [
+            './audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', 
+            './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3',
+            './audio/bgm7.mp3'
+        ];
         let currentBgmIndex = -1, currentBgm = null, bgmStartTime = 0;
 
         const sounds = {
@@ -259,6 +263,7 @@
         let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
         let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
         let catchMotsuCounter = 0;
+        let lastTwinsSpawnTime = 0; 
 
         const motsuList = ['./images/shiro.png', './images/hatsu.png', './images/lever.png', './images/abura.png', './images/kasira.png', './images/gatsu.png', './images/nankotsu.png'];
 
@@ -286,7 +291,7 @@
             playBgm();
             if (selectedMode === 'easy') { hp = 5; maxHp = 5; baseSpeed = 0.8; spawnMotsuInterval = setInterval(spawnMotsu, 1800); }
             else { hp = 3; maxHp = 3; baseSpeed = 1.3; spawnMotsuInterval = setInterval(spawnMotsu, 1400); }
-            score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1; catchMotsuCounter = 0;
+            score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1; catchMotsuCounter = 0; lastTwinsSpawnTime = 0;
             updateUI(); updatePlayerPos();
             playerAnimInterval = setInterval(() => { if(!isPaused) { playerImgIdx = (playerImgIdx === 1) ? 2 : 1; updatePlayerPos(); } }, 1000);
             spawnEnemyInterval = setInterval(spawnEnemy, 2000);
@@ -298,13 +303,15 @@
             let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu);
             lastLineMotsu = line;
             const motsu = document.createElement('div');
-            let isTwins = Math.random() < 0.01; 
+            const now = Date.now();
+            let isTwins = (now - lastTwinsSpawnTime >= 60000) && (Math.random() < 0.01); 
             let isHeal = false;
             if (!isTwins && catchMotsuCounter >= 14) {
                 if (Math.random() < 0.05) { isHeal = true; catchMotsuCounter = 0; }
             }
             let img;
             if (isTwins) { 
+                lastTwinsSpawnTime = now; 
                 motsu.className = 'special'; 
                 motsu.classList.add('twins-effect'); 
                 img = './images/twins.png'; 
