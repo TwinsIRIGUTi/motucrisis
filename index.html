@@ -2,418 +2,758 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>モツモツクライシス</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モツゲーム ツルへの道</title>
     <style>
-        html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
-        body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
-        #game-screen { position: relative; width: 360px; height: 500px; background: #222; border: 4px solid #440000; margin-top: 10px; overflow: hidden; border-radius: 10px; }
-        
-        .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.5s; z-index: 1; pointer-events: none;}
-        .bg-active { opacity: 1; }
-        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s; z-index: 2; pointer-events: none; }
-        .danger-active { opacity: 1 !important; }
+        body {
+            margin: 0;
+            background-color: #231815;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
 
-        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
-        
-        .motsu, .enemy { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
-        .special { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; }
+        h1 {
+            margin: 5px 0;
+            font-size: 22px;
+            color: #f39c12;
+            text-shadow: 1px 1px 3px #000;
+        }
 
-        .fast-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.2); z-index: 8 !important; }
-        .twins-effect { filter: drop-shadow(0 0 20px #fffacd); z-index: 9 !important; animation: twinsGlow 1.5s ease-in-out infinite; }
-        @keyframes twinsGlow { 0%, 100% { filter: drop-shadow(0 0 15px #fffacd) brightness(1.1); } 50% { filter: drop-shadow(0 0 25px #ffeb3b) brightness(1.3); } }
+        #game-container {
+            position: relative;
+            width: 440px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
-        @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(1px, -1px); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(0, 0); } }
-        .shivering { animation: shiver 0.1s infinite !important; }
+        #ui-layer {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); background-image: url('./images/title_bg.png'); background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; text-align: center; }
-        
-        .crisis-title-container { margin-bottom: 10px; perspective: 500px; }
-        .title-part { font-family: 'Arial Black', sans-serif; font-weight: 900; font-style: italic; text-transform: uppercase; display: block; line-height: 0.8; position: relative; }
-        .title-motsu { font-size: 44px; color: #fff; text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15); animation: titleFloatMotsu 3s ease-in-out infinite; }
-        .title-crisis { font-size: 48px; color: #ff0000; text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000, 0 0 40px #ff0000; animation: titlePulseCrisis 1.5s ease-in-out infinite; transform: rotateX(15deg) translateZ(20px); }
-        @keyframes titleFloatMotsu { 0%, 100% { transform: translateY(0) rotateY(-5deg); } 50% { transform: translateY(-5px) rotateY(5deg); } }
-        @keyframes titlePulseCrisis { 0%, 100% { transform: scale(1) rotateX(15deg); opacity: 1; } 50% { transform: scale(1.05) rotateX(10deg); opacity: 0.8; } }
+        .info-box {
+            background: #34231e;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid #f39c12;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
 
-        .how-to-play { font-size: 11px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 8px; margin: 10px 0; border: 1px solid #444; width: 90%; line-height: 1.4; }
-        .how-to-play b { color: #ff0; }
+        .score-num {
+            font-size: 20px;
+            color: #fff;
+        }
 
-        .selector-label { font-size: 14px; margin-top: 5px; color: #ccc; }
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 8px; }
-        .mode-btn { padding: 5px 15px; background: #333; border: 2px solid #555; color: #fff; border-radius: 5px; cursor: pointer; font-size: 12px; }
-        .mode-btn.selected { border-color: #ff0000; background: #600; }
+        #next-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+        }
 
-        .char-selector { display: flex; gap: 10px; margin: 5px 0; }
-        .char-btn { width: 50px; height: 50px; border: 3px solid #555; border-radius: 10px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: rgba(255,255,255,0.1); cursor: pointer; }
-        .char-btn.selected { border-color: #ff0000; background-color: rgba(255,0,0,0.3); box-shadow: 0 0 10px #ff0000; }
+        #next-canvas {
+            background: #1a0f0d;
+            border-radius: 6px;
+            margin-top: 4px;
+            border: 1px solid #553a33;
+        }
 
-        .sound-switch { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid #777; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .ingame-controls { position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: auto; z-index: 30; }
+        #canvas-container {
+            position: relative;
+            border: 5px solid #e67e22;
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            background: #fffcf7;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
 
-        .shogo-gold { color: #D4AF37 !important; } 
-        .shogo-enji { color: #800000 !important; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0px 0px 5px #fff !important; font-weight: bold; } 
-        .shogo-mizu { color: #00BFFF !important; } 
-        .shogo-kiiro { color: #D19E1A !important; } 
+        #game-canvas {
+            display: block;
+        }
 
-        .action-btn { padding: 12px 20px; font-size: 20px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 180px; margin-top: 5px; outline: none; }
-        .result-btn { width: 240px !important; }
+        #evolution-line {
+            width: 100%;
+            background: #34231e;
+            padding: 6px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 9px;
+            border: 1px solid #553a33;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+        }
 
-        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; font-size: 14px; }
-        .btn { width: 100px; height: 70px; font-size: 30px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 15px; cursor: pointer; touch-action: none; }
-        .pause-btn { width: 80px; height: 70px; font-size: 14px; background: #555; border-bottom-color: #333; }
+        .evo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2px;
+            min-width: 35px;
+        }
 
-        #result-screen { display: none; background: rgba(0,0,0,0.9); }
+        .evo-circle {
+            border-radius: 50%;
+            margin-bottom: 2px;
+            border: 1px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .evo-name {
+            transform: scale(0.85);
+            white-space: nowrap;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .btn-style {
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px #7f2318;
+        }
+        .btn-style:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #7f2318;
+        }
+
+        #sound-btn {
+            background: #27ae60;
+            box-shadow: 0 4px #1e8449;
+        }
+        #sound-btn:active {
+            box-shadow: 0 2px #1e8449;
+        }
+
+        /* --- ゲームオーバーモーダル --- */
+        #game-over-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0 0 15px 15px;
+        }
+
+        #modal-card {
+            background: #34231e;
+            border: 3px solid #f39c12;
+            padding: 25px 35px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+
+        #modal-title {
+            font-size: 24px;
+            color: #e74c3c;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+        }
+
+        #modal-score-label {
+            font-size: 14px;
+            color: #f39c12;
+        }
+
+        #modal-score-val {
+            font-size: 32px;
+            color: #fff;
+            margin: 5px 0 20px 0;
+            font-weight: bold;
+        }
+
+        #retry-btn {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px #a0520d;
+        }
+        #retry-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #a0520d;
+        }
     </style>
+    <!-- 物理エンジン Matter.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 </head>
 <body>
 
-    <div id="game-screen">
-        <div id="bg-container">
-            <div class="bg-layer bg-active" style="background-image: url('./images/background1.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background2.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background3.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background4.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background5.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background6.png');"></div>
-            <div class="bg-layer" style="background-image: url('./images/background7.png');"></div>
-        </div>
-        <div id="bg-danger"></div>
-        <div id="damage-flash"></div>
+    <h1>モツゲーム ツルへの道</h1>
 
-        <div id="title-screen" class="overlay">
-            <div class="crisis-title-container">
-                <span class="title-part title-motsu">モツモツ</span>
-                <span class="title-part title-crisis">クライシス</span>
-            </div>
-
-            <div id="best-info" style="font-size:14px; margin-bottom:5px;">
-                最高記録: <span id="best-score-text">0</span> 点 (<span id="best-shogo-text">いちげんさん</span>)
-            </div>
-            
-            <div class="how-to-play">
-                左右ボタンで移動。降ってくるモツを拾え！<br>
-                <b>赤オーラ</b>: 3倍速＆高得点 / <b>梅割り</b>: 体力回復＆得点<br>
-                <b>twins(超レア)</b>: 体力最大回復＆1000点<br>
-                <b>靴・ボトル</b>: ダメージ！当たると体力が減るぞ。
-            </div>
-
-            <div class="selector-label">難易度：</div>
-            <div class="mode-selector">
-                <button class="mode-btn" id="mode-easy" onclick="selectMode('easy')">イージー</button>
-                <button class="mode-btn selected" id="mode-hard" onclick="selectMode('hard')">ハード</button>
-            </div>
-
-            <div class="selector-label">呑んべぇ：</div>
-            <div class="char-selector">
-                <div class="char-btn selected" id="btn-A" onclick="selectChar('A')" style="background-image:url('./images/playerA1.png')"></div>
-                <div class="char-btn" id="btn-B" onclick="selectChar('B')" style="background-image:url('./images/playerB1.png')"></div>
-                <div class="char-btn" id="btn-C" onclick="selectChar('C')" style="background-image:url('./images/playerC1.png')"></div>
-                <div class="char-btn" id="btn-D" onclick="selectChar('D')" style="background-image:url('./images/playerD1.png')"></div>
-            </div>
-
-            <div class="sound-switch" onpointerdown="toggleSound()">音設定: <span class="sound-status-text">ON</span></div>
-            <button class="action-btn" onpointerdown="startGame()">宴開始</button>
-        </div>
-
-        <div id="result-screen" class="overlay">
-            <h1 style="color:#ff0000; font-size:40px; margin:0;">宴 終 了</h1>
-            <div id="final-score" style="font-size:24px; margin:15px 0;">0 点</div>
-            <div id="final-shogo" style="font-size:18px; margin-bottom:20px;"></div>
-            <button class="action-btn result-btn" onclick="location.reload()">もう一杯！（戻る）</button>
-        </div>
-
+    <div id="game-container">
         <div id="ui-layer">
-            <div id="hp-display">体力: ❤️❤️❤️</div>
-            <div id="score-board">0点</div>
-            <div id="chain-display">連続: 0</div>
-            
-            <div class="ingame-controls">
-                <div class="sound-switch" style="margin-bottom:0;" onpointerdown="toggleSound()">
-                    音: <span class="sound-status-text">ON</span>
+            <div class="info-box">
+                <span style="font-size: 11px; color:#f39c12;">SCORE</span><br>
+                <span id="score-val" class="score-num">0</span>
+            </div>
+            <div id="next-container" class="info-box">
+                <span style="color:#f39c12;">NEXT</span>
+                <canvas id="next-canvas" width="50" height="50"></canvas>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="game-canvas" width="400" height="560"></canvas>
+
+            <!-- ゲームオーバー表示エリア -->
+            <div id="game-over-modal">
+                <div id="modal-card">
+                    <div id="modal-title">精算完了</div>
+                    <div id="modal-score-label">FINAL SCORE</div>
+                    <div id="modal-score-val">0</div>
+                    <button id="retry-btn" onclick="retryGame()">もう一度？</button>
                 </div>
             </div>
         </div>
-        <div id="player"></div>
+
+        <!-- 進化ガイド -->
+        <div id="evolution-line"></div>
+
+        <div class="controls-row">
+            <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
+            <button id="end-btn" class="btn-style" onclick="gameOverAction()">精算（終了）</button>
+        </div>
     </div>
 
-    <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
-        <button class="btn" onpointerdown="moveLeft()">◀</button>
-        <button class="btn pause-btn" id="btn-pause" onpointerdown="togglePause()">一時停止</button>
-        <button class="btn" onpointerdown="moveRight()">▶</button>
-    </div>
+<script>
+// ==========================================
+// Web Audio API による自作サウンド合成エンジン
+// ==========================================
+let audioCtx = null;
+let isSoundEnabled = false;
 
-    <script>
-        const totalLines = 5, lineWidth = 360 / totalLines;
-        let soundEnabled = true, isPaused = false, masterVolume = 0.1;
-        let selectedChar = 'A', selectedMode = 'hard';
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
 
-        const bgmFiles = [
-            './audio/bgm1.mp3', './audio/bgm2.mp3', './audio/bgm3.mp3', 
-            './audio/bgm4.mp3', './audio/bgm5.mp3', './audio/bgm6.mp3',
-            './audio/bgm7.mp3'
-        ];
-        let currentBgmIndex = -1, currentBgm = null, bgmStartTime = 0;
+function toggleSound() {
+    initAudio();
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById("sound-btn");
+    
+    if (isSoundEnabled) {
+        btn.innerText = "BGM: ON";
+        btn.style.background = "#27ae60";
+        startBGM();
+    } else {
+        btn.innerText = "BGM: OFF";
+        btn.style.background = "#7f8c8d";
+        stopBGM();
+    }
+}
 
-        const sounds = {
-            damage: new Audio('./audio/damage.mp3'),
-            siren: new Audio('./audio/siren.mp3'),
-            heal: new Audio('./audio/heal.mp3'),
-            get: new Audio('./audio/get.mp3'),
-            twins: new Audio('./audio/twins.mp3'),
-            selectA: new Audio('./audio/selectA.mp3'),
-            selectB: new Audio('./audio/selectB.mp3'),
-            selectC: new Audio('./audio/selectC.mp3'),
-            selectD: new Audio('./audio/selectD.mp3')
-        };
-        sounds.siren.loop = true;
+function playDropSound() {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.12);
+    
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.12);
+}
 
-        function updateMasterVolume(val) {
-            masterVolume = parseFloat(val);
-            // BGMの音量をさらに主張しないレベル(1/5)に設定
-            if (currentBgm) currentBgm.volume = masterVolume / 5;
-            Object.values(sounds).forEach(s => s.volume = masterVolume);
+function playMergeSound(level) {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const baseFreq = 260 + level * 35;
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioCtx.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.8, audioCtx.currentTime + 0.18);
+    
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+}
+
+function playGameOverSound() {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.6);
+    
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.6);
+}
+
+let bgmInterval = null;
+function startBGM() {
+    if (!isSoundEnabled || bgmInterval) return;
+    
+    const notes = [220, 247.5, 264, 293.66, 330, 352, 396, 440];
+    let step = 0;
+
+    bgmInterval = setInterval(() => {
+        if (!audioCtx || !isSoundEnabled) return;
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        const note = notes[step % notes.length];
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.22);
+        
+        step++;
+    }, 250);
+}
+
+function stopBGM() {
+    if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+    }
+}
+
+// ==========================================
+// 【モツ定義データ】
+// ==========================================
+const MOTSU_TYPES = [
+    { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "images/shiro.png" },
+    { name: "レバ",     radius: 19, color: "#8b1e0f", score: 3,  image: "images/reba.png" },
+    { name: "ガツ",     radius: 26, color: "#f5cd79", score: 6,  image: "images/gatsu.png" },
+    { name: "アブラ",   radius: 34, color: "#fff200", score: 10, image: "images/abura.png" },
+    { name: "ナンコツ", radius: 42, color: "#bdc3c7", score: 15, image: "images/nankotsu.png" },
+    { name: "ハツ",     radius: 51, color: "#d63031", score: 21, image: "images/hatsu.png" },
+    { name: "タン",     radius: 61, color: "#e17055", score: 28, image: "images/tan.png" },
+    { name: "カシラ",   radius: 71, color: "#b33939", score: 36, image: "images/kashira.png" },
+    { name: "テッポウ", radius: 82, color: "#f8a5c2", score: 45, image: "images/teppou.png" },
+    { name: "コブクロ", radius: 93, color: "#ffaaa6", score: 55, image: "images/kobukuro.png" },
+    { name: "ツル",     radius: 105, color: "#1abc9c", score: 66, image: "images/tsuru.png" }
+];
+
+const cacheBuster = Date.now();
+MOTSU_TYPES.forEach(matsu => {
+    if (matsu.image) {
+        const img = new Image();
+        img.src = matsu.image + "?v=" + cacheBuster;
+        matsu.imgElement = img;
+    }
+});
+
+const { Engine, Runner, Bodies, Composite, Body, Events } = Matter;
+
+const engine = Engine.create({ 
+    gravity: { y: 1.0 },
+    constraintIterations: 4 
+});
+const world = engine.world;
+
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
+const nextCanvas = document.getElementById("next-canvas");
+const nextCtx = nextCanvas.getContext("2d");
+
+const WIDTH = 400;
+const HEIGHT = 560;
+const DEAD_LINE = 95; 
+
+let score = 0;
+let currentMotsuIndex = getRandomMotsuIndex();
+let nextMotsuIndex = getRandomMotsuIndex();
+let isReadyToDrop = true;
+let previewX = WIDTH / 2;
+let gameOver = false;
+
+const MOTSU_PHYSICS = {
+    restitution: 0.18, 
+    friction: 0.08,    
+    density: 0.001
+};
+
+const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
+const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
+const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
+Composite.add(world, [ground, leftWall, rightWall]);
+
+const runner = Runner.create();
+Runner.run(runner, engine);
+
+function init() {
+    buildEvolutionGuide();
+    drawNext();
+    requestAnimationFrame(renderLoop);
+}
+
+function getRandomMotsuIndex() {
+    return Math.floor(Math.random() * 5);
+}
+
+function buildEvolutionGuide() {
+    const guide = document.getElementById("evolution-line");
+    guide.innerHTML = "";
+    const maxRadius = MOTSU_TYPES[MOTSU_TYPES.length - 1].radius;
+    
+    MOTSU_TYPES.forEach(m => {
+        const item = document.createElement("div");
+        item.className = "evo-item";
+        
+        const displaySize = Math.max(6, (m.radius / maxRadius) * 20);
+        
+        const circle = document.createElement("div");
+        circle.className = "evo-circle";
+        circle.style.width = `${displaySize}px`;
+        circle.style.height = `${displaySize}px`;
+        
+        if (m.image) {
+            circle.style.backgroundImage = `url(${m.image}?v=${cacheBuster})`;
+        } else {
+            circle.style.backgroundColor = m.color;
         }
+        
+        const name = document.createElement("span");
+        name.className = "evo-name";
+        name.innerText = m.name;
+        
+        item.appendChild(circle);
+        item.appendChild(name);
+        guide.appendChild(item);
+    });
+}
 
-        function playBgm() {
-            if (!soundEnabled) return;
-            let nextIndex;
-            do { nextIndex = Math.floor(Math.random() * bgmFiles.length); } while (nextIndex === currentBgmIndex && bgmFiles.length > 1);
-            const nextBgm = new Audio(bgmFiles[nextIndex]);
-            nextBgm.loop = false;
-            nextBgm.volume = 0;
-            // BGMターゲット音量を1/5に変更
-            const targetVolume = masterVolume / 5;
-            nextBgm.onended = () => { if (isGameRunning && soundEnabled) playBgm(); };
-            if (currentBgm) {
-                let vol = targetVolume;
-                const prevBgm = currentBgm;
-                const fadeInterval = setInterval(() => {
-                    if (isPaused) return;
-                    vol -= 0.005; // ゆっくりフェード
-                    if (vol <= 0) { clearInterval(fadeInterval); prevBgm.pause(); prevBgm.currentTime = 0; }
-                    else { prevBgm.volume = Math.max(0, vol); nextBgm.volume = Math.min(targetVolume, targetVolume - vol); }
-                }, 100);
-            } else { nextBgm.volume = targetVolume; }
-            currentBgm = nextBgm; currentBgmIndex = nextIndex; 
-            currentBgm.play().catch(()=>{});
-            bgmStartTime = Date.now();
-        }
+function drawNext() {
+    nextCtx.clearRect(0, 0, 50, 50);
+    const nextType = MOTSU_TYPES[nextMotsuIndex];
+    const r = Math.min(16, nextType.radius * 0.8);
 
-        setInterval(() => {
-            if (isGameRunning && !isPaused && soundEnabled && currentBgm) {
-                if (Date.now() - bgmStartTime > 90000) { playBgm(); }
+    nextCtx.save();
+    nextCtx.beginPath();
+    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.closePath();
+    nextCtx.clip();
+
+    if (nextType.imgElement && nextType.imgElement.complete && nextType.imgElement.naturalWidth !== 0) {
+        nextCtx.drawImage(nextType.imgElement, 25 - r, 25 - r, r * 2, r * 2);
+    } else {
+        nextCtx.fillStyle = nextType.color;
+        nextCtx.fill();
+    }
+
+    nextCtx.restore();
+
+    nextCtx.strokeStyle = "#fff";
+    nextCtx.lineWidth = 1.5;
+    nextCtx.beginPath();
+    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.stroke();
+}
+
+function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.globalAlpha = alpha;
+
+    context.beginPath();
+    context.arc(0, 0, radius, 0, 2 * Math.PI);
+    context.closePath();
+    context.clip();
+
+    if (type.imgElement && type.imgElement.complete && type.imgElement.naturalWidth !== 0) {
+        context.drawImage(type.imgElement, -radius, -radius, radius * 2, radius * 2);
+    } else {
+        context.fillStyle = type.color;
+        context.fill();
+    }
+
+    context.restore();
+
+    context.save();
+    context.translate(x, y);
+    context.globalAlpha = alpha;
+    context.strokeStyle = "#231815";
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.arc(0, 0, radius, 0, 2 * Math.PI);
+    context.stroke();
+
+    if (!type.imgElement || !type.imgElement.complete || type.imgElement.naturalWidth === 0) {
+        context.rotate(angle);
+        context.fillStyle = (type.color === "#f5f6fa" || type.color === "#fff200" || type.color === "#ffaaa6") ? "#231815" : "#fff";
+        context.font = `bold ${Math.max(9, radius * 0.42)}px sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(type.name, 0, 0);
+    }
+
+    context.restore();
+}
+
+function renderLoop() {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+    ctx.strokeStyle = "rgba(230, 126, 34, 0.4)";
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, DEAD_LINE);
+    ctx.lineTo(WIDTH, DEAD_LINE);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const bodies = Composite.allBodies(world);
+    bodies.forEach(body => {
+        if (body.isStatic) return;
+        const type = body.motsuType;
+        if (!type) return;
+
+        drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
+    });
+
+    if (isReadyToDrop && !gameOver) {
+        const currentType = MOTSU_TYPES[currentMotsuIndex];
+        drawMotsu(ctx, previewX, DEAD_LINE - 25, currentType.radius, 0, currentType, 0.8);
+        
+        ctx.strokeStyle = "rgba(35, 24, 21, 0.1)";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(previewX, DEAD_LINE - 25);
+        ctx.lineTo(previewX, HEIGHT);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    if (!gameOver) {
+        requestAnimationFrame(renderLoop);
+    }
+}
+
+function updatePreviewPosition(clientX) {
+    if (!isReadyToDrop || gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    previewX = clientX - rect.left;
+    
+    const r = MOTSU_TYPES[currentMotsuIndex].radius;
+    if (previewX < r) previewX = r;
+    if (previewX > WIDTH - r) previewX = WIDTH - r;
+}
+
+canvas.addEventListener("mousemove", (e) => updatePreviewPosition(e.clientX));
+canvas.addEventListener("click", () => { 
+    initAudio();
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
+});
+
+canvas.addEventListener("touchmove", (e) => {
+    updatePreviewPosition(e.touches[0].clientX);
+    e.preventDefault();
+}, { passive: false });
+canvas.addEventListener("touchend", () => { 
+    initAudio();
+    if(isReadyToDrop && !gameOver) dropMotsu(); 
+});
+
+function dropMotsu() {
+    isReadyToDrop = false;
+    playDropSound();
+
+    const type = MOTSU_TYPES[currentMotsuIndex];
+    
+    const motsu = Bodies.circle(previewX, DEAD_LINE - 25, type.radius, {
+        restitution: MOTSU_PHYSICS.restitution,
+        friction: MOTSU_PHYSICS.friction,
+        density: MOTSU_PHYSICS.density
+    });
+    
+    motsu.motsuType = type;
+    motsu.spawnTime = Date.now();
+    motsu.lockTimer = 0;
+
+    Composite.add(world, motsu);
+
+    currentMotsuIndex = nextMotsuIndex;
+    nextMotsuIndex = getRandomMotsuIndex();
+    drawNext();
+
+    setTimeout(() => {
+        isReadyToDrop = true;
+        updatePreviewPosition(previewX);
+    }, 600);
+}
+
+Events.on(engine, 'collisionStart', (event) => {
+    const pairs = event.pairs;
+    
+    pairs.forEach(pair => {
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        if (bodyA.motsuType && bodyB.motsuType && bodyA.motsuType.name === bodyB.motsuType.name) {
+            if (bodyA.isDead || bodyB.isDead) return;
+
+            const currentIndex = MOTSU_TYPES.findIndex(m => m.name === bodyA.motsuType.name);
+            
+            if (currentIndex === MOTSU_TYPES.length - 1) {
+                score += 100;
+                document.getElementById("score-val").innerText = score;
+                playMergeSound(currentIndex + 2);
+                bodyA.isDead = true; bodyB.isDead = true;
+                Composite.remove(world, [bodyA, bodyB]);
+                return;
             }
-        }, 1000);
 
-        function togglePause() {
-            if (!isGameRunning) return;
-            isPaused = !isPaused;
-            const btn = document.getElementById('btn-pause');
-            btn.innerText = isPaused ? "再開" : "一時停止";
-            btn.style.background = isPaused ? "#aa0000" : "#555";
-            if (isPaused) {
-                if (currentBgm) currentBgm.pause();
-                sounds.siren.pause();
-            } else {
-                if (soundEnabled) {
-                    if (currentBgm) currentBgm.play().catch(()=>{});
-                    if (hp === 1) sounds.siren.play().catch(()=>{});
+            const midX = (bodyA.position.x + bodyB.position.x) / 2;
+            const midY = (bodyA.position.y + bodyB.position.y) / 2;
+            const nextType = MOTSU_TYPES[currentIndex + 1];
+
+            bodyA.isDead = true;
+            bodyB.isDead = true;
+
+            Composite.remove(world, [bodyA, bodyB]);
+
+            const upgraded = Bodies.circle(midX, midY, nextType.radius, {
+                restitution: MOTSU_PHYSICS.restitution,
+                friction: MOTSU_PHYSICS.friction,
+                density: MOTSU_PHYSICS.density
+            });
+            upgraded.motsuType = nextType;
+            upgraded.spawnTime = Date.now();
+            upgraded.lockTimer = 0;
+
+            Composite.add(world, upgraded);
+
+            score += nextType.score;
+            document.getElementById("score-val").innerText = score;
+
+            playMergeSound(currentIndex + 1);
+        }
+    });
+});
+
+// --- 調整版：ラインオーバー判定（理不尽な死を防止） ---
+Events.on(engine, 'afterUpdate', () => {
+    if (gameOver) return;
+    
+    const bodies = Composite.allBodies(world);
+    let triggerGameOver = false;
+
+    bodies.forEach(body => {
+        if (body.isStatic) return;
+        
+        const topY = body.position.y - body.motsuType.radius;
+        
+        if (topY < DEAD_LINE) {
+            // ドロップ後3秒間は判定スキップ（跳ね返りや出現直後の判定除外）
+            if (Date.now() - body.spawnTime > 3000) { 
+                // スピードがほぼゼロ（停止状態）の場合のみカウント
+                if (body.speed < 0.15) {
+                    body.lockTimer += 1;
+                    // ライン上で約1.5秒間（90フレーム）動かずに静止し続けた場合のみ即死
+                    if (body.lockTimer > 90) {
+                        triggerGameOver = true;
+                    }
+                } else {
+                    body.lockTimer = 0; // 転がったり動いている最中はセーフ
                 }
             }
+        } else {
+            body.lockTimer = 0;
         }
+    });
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && isGameRunning && !isPaused) {
-                togglePause();
-            }
-        });
+    if (triggerGameOver) {
+        gameOverAction();
+    }
+});
 
-        function selectMode(m) {
-            selectedMode = m;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
-            document.getElementById(`mode-${m}`).classList.add('selected');
-        }
+// --- ゲームオーバー表示処理 ---
+function gameOverAction() {
+    if (gameOver) return;
+    gameOver = true;
+    stopBGM();
+    playGameOverSound();
+    
+    // スコアの反映
+    document.getElementById("modal-score-val").innerText = score;
+    
+    // ダイアログ表示
+    const modal = document.getElementById("game-over-modal");
+    modal.style.display = "flex";
+}
 
-        function selectChar(type) {
-            selectedChar = type;
-            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
-            document.getElementById(`btn-${type}`).classList.add('selected');
-            if (soundEnabled) {
-                const s = sounds[`select${type}`];
-                if (s) { s.volume = masterVolume; s.currentTime = 0; s.play().catch(()=>{}); }
-            }
-        }
+// リトライ処理
+function retryGame() {
+    location.reload();
+}
 
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            document.querySelectorAll('.sound-status-text').forEach(el => el.innerText = soundEnabled ? "ON" : "OFF");
-            if (!soundEnabled) { 
-                if (currentBgm) currentBgm.pause();
-                Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; }); 
-            } else if (isGameRunning && !isPaused) { 
-                if (currentBgm) { currentBgm.volume = masterVolume / 5; currentBgm.play().catch(()=>{}); }
-                if(hp === 1) { sounds.siren.volume = masterVolume; sounds.siren.play().catch(()=>{}); }
-            }
-        }
+init();
+</script>
 
-        function playSfx(audio) { if (soundEnabled && audio && !isPaused) { audio.volume = masterVolume; audio.currentTime = 0; audio.play().catch(()=>{}); } }
-
-        let score, hp, maxHp, chainCount, playerLine, isGameRunning = false, playerImgIdx = 1;
-        let spawnMotsuInterval, spawnEnemyInterval, bgInterval, playerAnimInterval;
-        let lastLineMotsu = -1, lastLineEnemy = -1, baseSpeed = 1.3;
-        let catchMotsuCounter = 0;
-        let lastTwinsSpawnTime = 0; 
-
-        const motsuList = ['./images/shiro.png', './images/hatsu.png', './images/lever.png', './images/abura.png', './images/kasira.png', './images/gatsu.png', './images/nankotsu.png'];
-
-        function getShogoData(s) {
-            if (s >= 15000) return { text: "レジェンド", class: "shogo-gold" };
-            if (s >= 5000) return { text: "常連さん", class: "shogo-enji" };
-            if (s >= 2500) return { text: "お客さん", class: "shogo-mizu" };
-            if (s >= 1000) return { text: "御新規さん", class: "shogo-kiiro" };
-            return { text: "いちげんさん", class: "" };
-        }
-
-        window.onload = () => {
-            const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
-            document.getElementById('best-score-text').innerText = best;
-            const shogo = getShogoData(best);
-            const el = document.getElementById('best-shogo-text');
-            el.innerText = shogo.text; el.className = shogo.class;
-            updateMasterVolume(0.1);
-        };
-
-        function startGame() {
-            if (isGameRunning) return;
-            isGameRunning = true; isPaused = false;
-            document.getElementById('title-screen').style.display = 'none';
-            playBgm();
-            if (selectedMode === 'easy') { hp = 5; maxHp = 5; baseSpeed = 0.8; spawnMotsuInterval = setInterval(spawnMotsu, 1800); }
-            else { hp = 3; maxHp = 3; baseSpeed = 1.3; spawnMotsuInterval = setInterval(spawnMotsu, 1400); }
-            score = 0; chainCount = 0; playerLine = 2; playerImgIdx = 1; catchMotsuCounter = 0; lastTwinsSpawnTime = 0;
-            updateUI(); updatePlayerPos();
-            playerAnimInterval = setInterval(() => { if(!isPaused) { playerImgIdx = (playerImgIdx === 1) ? 2 : 1; updatePlayerPos(); } }, 1000);
-            spawnEnemyInterval = setInterval(spawnEnemy, 2000);
-            bgInterval = setInterval(() => { if(!isPaused) switchBackground(); }, 30000);
-        }
-
-        function spawnMotsu() {
-            if (!isGameRunning || isPaused) return;
-            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineMotsu);
-            lastLineMotsu = line;
-            const motsu = document.createElement('div');
-            const now = Date.now();
-            let isTwins = (now - lastTwinsSpawnTime >= 60000) && (Math.random() < 0.01); 
-            let isHeal = false;
-            if (!isTwins && catchMotsuCounter >= 14) {
-                if (Math.random() < 0.05) { isHeal = true; catchMotsuCounter = 0; }
-            }
-            let img;
-            if (isTwins) { 
-                lastTwinsSpawnTime = now; 
-                motsu.className = 'special'; 
-                motsu.classList.add('twins-effect'); 
-                img = './images/twins.png'; 
-            } else { 
-                motsu.className = 'motsu'; 
-                img = isHeal ? './images/umewari.png' : motsuList[Math.floor(Math.random() * motsuList.length)]; 
-            }
-            let isFast = !isTwins && Math.random() < 0.15, speed = baseSpeed * (isFast ? 3.0 : 1.0);
-            if (isFast) motsu.classList.add('fast-mode');
-            motsu.style.backgroundImage = `url('${img}')`;
-            motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
-            let top = -70; document.getElementById('game-screen').appendChild(motsu);
-            function fall() {
-                if (!isGameRunning) { motsu.remove(); return; }
-                if (!isPaused) {
-                    top += speed; motsu.style.top = top + 'px';
-                    if (top > 380 && top < 450 && line === playerLine) {
-                        if (isTwins) { hp = Math.min(maxHp, hp + 3); score += 1000; playSfx(sounds.twins); }
-                        else if (isHeal) { if (hp === maxHp) { score += 300; } else { hp++; score += 100; } playSfx(sounds.heal); }
-                        else { chainCount++; catchMotsuCounter++; score += (isFast ? 50 : 10); if (chainCount % 10 === 0) score += 30; playSfx(sounds.get); }
-                        updateUI(); motsu.remove(); return;
-                    }
-                    if (top > 500) { if (!isHeal && !isTwins) { chainCount = 0; updateUI(); } motsu.remove(); return; }
-                }
-                requestAnimationFrame(fall);
-            }
-            requestAnimationFrame(fall);
-        }
-
-        function spawnEnemy() {
-            if (!isGameRunning || isPaused) return;
-            let line; do { line = Math.floor(Math.random() * totalLines); } while (line === lastLineEnemy);
-            lastLineEnemy = line;
-            const enemy = document.createElement('div'); enemy.className = 'enemy';
-            const isShoe = Math.random() < 0.5;
-            const isEnemyFast = (selectedMode !== 'easy') && (Math.random() < 0.08); 
-            if (isEnemyFast) enemy.classList.add('fast-mode');
-            enemy.style.backgroundImage = isShoe ? "url('./images/shoe.png')" : "url('./images/bottle.png')";
-            let speed = baseSpeed * 2.5 * (isEnemyFast ? 2.5 : 1.0), top = -70, startTime = Date.now();
-            enemy.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
-            document.getElementById('game-screen').appendChild(enemy);
-            function fall() {
-                if (!isGameRunning) { enemy.remove(); return; }
-                if (!isPaused) {
-                    top += speed;
-                    let horizontal = isShoe ? Math.sin((Date.now() - startTime) / 100) * 15 : 0;
-                    enemy.style.top = top + 'px';
-                    enemy.style.transform = `translateX(${horizontal}px) rotate(${isShoe ? (top % 360) : 0}deg)`;
-                    if (top > 380 && top < 450 && line === playerLine) {
-                        hp--; playSfx(sounds.damage);
-                        document.getElementById('damage-flash').style.opacity = "0.7";
-                        setTimeout(() => { if(document.getElementById('damage-flash')) document.getElementById('damage-flash').style.opacity = "0"; }, 150);
-                        updateUI(); enemy.remove(); if (hp <= 0) gameOver(); return;
-                    }
-                    if (top > 500) { enemy.remove(); return; }
-                } else { startTime += 16; } 
-                requestAnimationFrame(fall);
-            }
-            requestAnimationFrame(fall);
-        }
-
-        function switchBackground() {
-            const bgs = document.querySelectorAll('.bg-layer');
-            if (bgs.length === 0) return;
-            let nextIdx = Math.floor(Math.random() * bgs.length);
-            bgs.forEach(b => b.classList.remove('bg-active')); bgs[nextIdx].classList.add('bg-active');
-        }
-
-        function gameOver() {
-            isGameRunning = false;
-            clearInterval(spawnMotsuInterval); clearInterval(spawnEnemyInterval); 
-            clearInterval(bgInterval); clearInterval(playerAnimInterval);
-            if (currentBgm) { currentBgm.pause(); currentBgm.onended = null; }
-            sounds.siren.pause(); document.getElementById('player').classList.add('shivering');
-            const best = parseInt(localStorage.getItem('motsu_best_score') || '0');
-            if (score > best) localStorage.setItem('motsu_best_score', score);
-            const shogo = getShogoData(score);
-            document.getElementById('final-score').innerText = score + " 点";
-            document.getElementById('final-shogo').innerText = "称号: " + shogo.text;
-            document.getElementById('final-shogo').className = shogo.class;
-            document.getElementById('result-screen').style.display = 'flex';
-        }
-
-        function updateUI() {
-            document.getElementById('hp-display').innerText = "体力: " + "❤️".repeat(Math.max(0, hp));
-            document.getElementById('score-board').innerText = score + "点";
-            document.getElementById('chain-display').innerText = "連続: " + chainCount;
-            if (hp === 1 && isGameRunning) {
-                document.getElementById('bg-danger').classList.add('danger-active');
-                if (soundEnabled && sounds.siren.paused && !isPaused) { sounds.siren.volume = masterVolume; sounds.siren.play().catch(()=>{}); }
-            } else { document.getElementById('bg-danger').classList.remove('danger-active'); sounds.siren.pause(); }
-        }
-
-        function updatePlayerPos() {
-            const p = document.getElementById('player');
-            p.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
-            p.style.backgroundImage = `url('./images/player${selectedChar}${playerImgIdx}.png')`;
-        }
-
-        window.moveLeft = () => { if(playerLine > 0 && isGameRunning && !isPaused) { playerLine--; updatePlayerPos(); } };
-        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning && !isPaused) { playerLine++; updatePlayerPos(); } };
-    </script>
 </body>
 </html>
