@@ -2,53 +2,74 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>モツゲーム ツルへの道</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>モツゲーム　ツルへの道</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
             margin: 0;
+            padding: 0;
             background-color: #231815;
             color: #fff;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* アプリ全体のラッパー（画面中央配置＆ビューポート最適化） */
+        #app-wrapper {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-            user-select: none;
+            padding: 10px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
         }
 
-        h1 {
-            margin: 5px 0;
-            font-size: 22px;
-            color: #f39c12;
-            text-shadow: 1px 1px 3px #000;
-        }
-
+        /* 拡大縮小で全画面にフィットさせるゲームコンテナ */
         #game-container {
             position: relative;
             width: 440px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            transform-origin: center center;
+        }
+
+        h1 {
+            margin: 0 0 6px 0;
+            font-size: 20px;
+            color: #f39c12;
+            text-shadow: 1px 1px 3px #000;
+            text-align: center;
+            letter-spacing: 1px;
         }
 
         #ui-layer {
-            width: 90%;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .info-box {
             background: #34231e;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 8px;
             border: 2px solid #f39c12;
             font-weight: bold;
-            min-width: 70px;
+            min-width: 80px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
@@ -62,13 +83,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         #next-canvas {
             background: #1a0f0d;
             border-radius: 6px;
-            margin-top: 4px;
+            margin-top: 2px;
             border: 1px solid #553a33;
         }
 
@@ -78,35 +99,37 @@
             border-top: none;
             border-radius: 0 0 20px 20px;
             background: #fffcf7;
-            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
             overflow: hidden;
+            width: 400px;
+            height: 560px;
         }
 
         #game-canvas {
             display: block;
+            width: 400px;
+            height: 560px;
         }
 
+        /* 進化ガイド（コンパクト表示） */
         #evolution-line {
             width: 100%;
             background: #34231e;
-            padding: 6px;
+            padding: 4px;
             border-radius: 8px;
-            margin-top: 10px;
+            margin-top: 6px;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            font-size: 9px;
+            font-size: 8px;
             border: 1px solid #553a33;
-            box-sizing: border-box;
-            flex-wrap: wrap;
         }
 
         .evo-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 2px;
-            min-width: 35px;
+            min-width: 28px;
         }
 
         .evo-circle {
@@ -119,26 +142,29 @@
         }
 
         .evo-name {
-            transform: scale(0.85);
+            transform: scale(0.8);
             white-space: nowrap;
         }
 
         .controls-row {
             display: flex;
             gap: 12px;
-            margin-top: 10px;
+            margin-top: 8px;
+            width: 100%;
+            justify-content: center;
         }
 
         .btn-style {
             background: #c0392b;
             color: white;
             border: none;
-            padding: 8px 20px;
-            font-size: 14px;
+            padding: 8px 18px;
+            font-size: 13px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
             box-shadow: 0 4px #7f2318;
+            transition: background 0.2s, transform 0.1s;
         }
         .btn-style:active {
             transform: translateY(2px);
@@ -153,71 +179,124 @@
             box-shadow: 0 2px #1e8449;
         }
 
-        /* --- ゲームオーバーモーダル --- */
-        #game-over-modal {
-            display: none;
+        /* --- オーバーレイ モーダル (タイトル & ゲームオーバー) --- */
+        .overlay-modal {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 10;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 20;
+            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             border-radius: 0 0 15px 15px;
+            padding: 15px;
         }
 
-        #modal-card {
+        #title-modal {
+            display: flex;
+            border-radius: 15px;
+        }
+
+        #game-over-modal {
+            display: none;
+        }
+
+        .modal-card {
             background: #34231e;
             border: 3px solid #f39c12;
-            padding: 20px 25px;
+            padding: 16px;
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-            width: 270px;
+            width: 320px;
+            max-width: 90%;
         }
 
-        #modal-title {
+        .modal-title {
             font-size: 22px;
-            color: #e74c3c;
+            color: #f39c12;
             margin: 0 0 8px 0;
             font-weight: bold;
             border-bottom: 2px solid #553a33;
             padding-bottom: 6px;
         }
 
-        #modal-score-label {
+        .modal-score-label {
             font-size: 11px;
             color: #f39c12;
             margin-top: 4px;
         }
 
-        #modal-score-val {
-            font-size: 30px;
+        .modal-score-val {
+            font-size: 28px;
             color: #fff;
-            margin: 0 0 12px 0;
+            margin: 0 0 8px 0;
             font-weight: bold;
         }
+
+        /* ランキング表示リスト */
+        .ranking-box {
+            background: #1a0f0d;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 8px 0 14px 0;
+            border: 1px solid #553a33;
+            text-align: left;
+        }
+
+        .ranking-title {
+            font-size: 12px;
+            color: #f39c12;
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 6px;
+            border-bottom: 1px dashed #34231e;
+        }
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-num {
+            font-weight: bold;
+            color: #e67e22;
+            width: 24px;
+        }
+        .rank-top { color: #f1c40f; }
 
         /* 部位実績エリア */
         .result-counts {
             background: #1a0f0d;
             border-radius: 8px;
             padding: 8px 12px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             border: 1px solid #553a33;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .result-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
         }
 
@@ -228,8 +307,8 @@
         }
 
         .badge-icon {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: inline-block;
             border: 1px solid #fff;
@@ -237,24 +316,39 @@
 
         .result-val {
             color: #f1c40f;
-            font-size: 16px;
+            font-size: 14px;
         }
 
-        #retry-btn {
+        .action-btn {
             background: #e67e22;
             color: #fff;
             border: none;
-            padding: 10px 30px;
-            font-size: 16px;
+            padding: 10px 20px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             box-shadow: 0 4px #a0520d;
             width: 100%;
+            margin-top: 6px;
         }
-        #retry-btn:active {
+        .action-btn:active {
             transform: translateY(2px);
             box-shadow: 0 2px #a0520d;
+        }
+
+        .sub-btn {
+            background: #7f8c8d;
+            box-shadow: 0 4px #4d5656;
+        }
+        .sub-btn:active {
+            box-shadow: 0 2px #4d5656;
+        }
+
+        .modal-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
     </style>
     <!-- 物理エンジン Matter.js -->
@@ -262,79 +356,126 @@
 </head>
 <body>
 
-    <h1>モツゲーム ツルへの道</h1>
+    <div id="app-wrapper">
+        <div id="game-container">
+            <h1>モツゲーム　ツルへの道</h1>
 
-    <div id="game-container">
-        <div id="ui-layer">
-            <div class="info-box">
-                <span style="font-size: 11px; color:#f39c12;">SCORE</span><br>
-                <span id="score-val" class="score-num">0</span>
-            </div>
-            <div id="next-container" class="info-box">
-                <span style="color:#f39c12;">NEXT</span>
-                <canvas id="next-canvas" width="50" height="50"></canvas>
-            </div>
-        </div>
-
-        <div id="canvas-container">
-            <canvas id="game-canvas" width="400" height="560"></canvas>
-
-            <!-- ゲームオーバー表示エリア -->
-            <div id="game-over-modal">
-                <div id="modal-card">
-                    <div id="modal-title">精算完了</div>
-                    <div id="modal-score-label">FINAL SCORE</div>
-                    <div id="modal-score-val">0</div>
-
-                    <!-- 作成実績カウント -->
-                    <div class="result-counts">
-                        <div class="result-row">
-                            <span class="result-label">
-                                <span class="badge-icon" style="background-color: #1abc9c;"></span>
-                                ツル（最大）
-                            </span>
-                            <span id="tsuru-count" class="result-val">0個</span>
-                        </div>
-                        <div class="result-row">
-                            <span class="result-label">
-                                <span class="badge-icon" style="background-color: #ffaaa6;"></span>
-                                コブクロ
-                            </span>
-                            <span id="kobukuro-count" class="result-val">0個</span>
-                        </div>
-                        <div class="result-row">
-                            <span class="result-label">
-                                <span class="badge-icon" style="background-color: #f8a5c2;"></span>
-                                テッポウ
-                            </span>
-                            <span id="teppou-count" class="result-val">0個</span>
-                        </div>
-                        <div class="result-row">
-                            <span class="result-label">
-                                <span class="badge-icon" style="background-color: #b33939;"></span>
-                                カシラ
-                            </span>
-                            <span id="kashira-count" class="result-val">0個</span>
-                        </div>
-                    </div>
-
-                    <button id="retry-btn" onclick="retryGame()">もう一度？</button>
+            <div id="ui-layer">
+                <div class="info-box">
+                    <span style="font-size: 10px; color:#f39c12;">SCORE</span><br>
+                    <span id="score-val" class="score-num">0</span>
+                </div>
+                <div id="next-container" class="info-box">
+                    <span style="color:#f39c12;">NEXT</span>
+                    <canvas id="next-canvas" width="40" height="40"></canvas>
                 </div>
             </div>
-        </div>
 
-        <!-- 進化ガイド -->
-        <div id="evolution-line"></div>
+            <div id="canvas-container">
+                <canvas id="game-canvas" width="400" height="560"></canvas>
 
-        <div class="controls-row">
-            <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
-            <button id="end-btn" class="btn-style" onclick="gameOverAction()">精算（終了）</button>
+                <!-- スタート（タイトル）画面モーダル -->
+                <div id="title-modal" class="overlay-modal">
+                    <div class="modal-card">
+                        <div class="modal-title">ツルへの道</div>
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 10px;">同じモツを合わせて大きくしよう！</div>
+                        
+                        <div class="ranking-box">
+                            <div class="ranking-title">🏆 ハイスコアランキング</div>
+                            <ul id="title-ranking-list" class="ranking-list">
+                                <!-- JavaScriptで動的生成 -->
+                            </ul>
+                        </div>
+
+                        <button class="action-btn" onclick="startGame()">ゲームスタート</button>
+                    </div>
+                </div>
+
+                <!-- 精算完了（ゲームオーバー）モーダル -->
+                <div id="game-over-modal" class="overlay-modal">
+                    <div class="modal-card">
+                        <div class="modal-title" style="color: #e74c3c;">精算完了</div>
+                        <div class="modal-score-label">FINAL SCORE</div>
+                        <div id="modal-score-val" class="modal-score-val">0</div>
+
+                        <!-- 作成実績カウント -->
+                        <div class="result-counts">
+                            <div class="result-row">
+                                <span class="result-label">
+                                    <span class="badge-icon" style="background-color: #1abc9c;"></span>
+                                    ツル（最大）
+                                </span>
+                                <span id="tsuru-count" class="result-val">0個</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="result-label">
+                                    <span class="badge-icon" style="background-color: #ffaaa6;"></span>
+                                    コブクロ
+                                </span>
+                                <span id="kobukuro-count" class="result-val">0個</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="result-label">
+                                    <span class="badge-icon" style="background-color: #f8a5c2;"></span>
+                                    テッポウ
+                                </span>
+                                <span id="teppou-count" class="result-val">0個</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="result-label">
+                                    <span class="badge-icon" style="background-color: #b33939;"></span>
+                                    カシラ
+                                </span>
+                                <span id="kashira-count" class="result-val">0個</span>
+                            </div>
+                        </div>
+
+                        <div class="modal-btn-group">
+                            <button class="action-btn" onclick="resetAndStartGame()">もう一度遊ぶ</button>
+                            <button class="action-btn sub-btn" onclick="backToTitle()">タイトルへ戻る</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 進化ガイド -->
+            <div id="evolution-line"></div>
+
+            <div class="controls-row">
+                <button id="sound-btn" class="btn-style" onclick="toggleSound()">BGM: OFF</button>
+                <button id="end-btn" class="btn-style" onclick="manualFinish()">精算（終了）</button>
+            </div>
         </div>
     </div>
 
 <script>
 // ==========================================
-// Web Audio API による自作サウンド合成エンジン
+// レスポンシブ スケーリング (スマホ画面対応)
+// ==========================================
+function fitToScreen() {
+    const container = document.getElementById('game-container');
+    const wrapper = document.getElementById('app-wrapper');
+    
+    // アプリケーション本来のベース高さと幅
+    const targetWidth = 440;
+    const targetHeight = 740;
+
+    const availableWidth = wrapper.clientWidth - 10;
+    const availableHeight = wrapper.clientHeight - 10;
+
+    const scaleX = availableWidth / targetWidth;
+    const scaleY = availableHeight / targetHeight;
+    
+    // 画面からはみ出さない最適なスケール値を適用
+    const scale = Math.min(scaleX, scaleY, 1.0);
+    container.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener('resize', fitToScreen);
+window.addEventListener('orientationchange', fitToScreen);
+
+// ==========================================
+// Web Audio API 自作サウンドエンジン
 // ==========================================
 let audioCtx = null;
 let isSoundEnabled = false;
@@ -458,7 +599,7 @@ function stopBGM() {
 }
 
 // ==========================================
-// 【モツ定義データ】
+// モツデータ定義 (11種)
 // ==========================================
 const MOTSU_TYPES = [
     { name: "シロ",     radius: 13, color: "#f5f6fa", score: 1,  image: "images/shiro.png" },
@@ -483,7 +624,51 @@ MOTSU_TYPES.forEach(matsu => {
     }
 });
 
-const { Engine, Runner, Bodies, Composite, Body, Events } = Matter;
+// ==========================================
+// ランキング機能 (LocalStorage Persistence)
+// ==========================================
+const RANKING_KEY = "motsu_game_ranking_v1";
+
+function getRanking() {
+    try {
+        const data = localStorage.getItem(RANKING_KEY);
+        return data ? JSON.parse(data) : [0, 0, 0, 0, 0];
+    } catch (e) {
+        return [0, 0, 0, 0, 0];
+    }
+}
+
+function saveScoreToRanking(newScore) {
+    let ranking = getRanking();
+    ranking.push(newScore);
+    ranking.sort((a, b) => b - a);
+    ranking = ranking.slice(0, 5); // 上位5位
+    try {
+        localStorage.setItem(RANKING_KEY, JSON.stringify(ranking));
+    } catch (e) {}
+    return ranking;
+}
+
+function renderRankingUI() {
+    const ranking = getRanking();
+    const listEl = document.getElementById("title-ranking-list");
+    listEl.innerHTML = "";
+    
+    ranking.forEach((sc, idx) => {
+        const li = document.createElement("li");
+        li.className = "ranking-item";
+        li.innerHTML = `
+            <span class="rank-num ${idx === 0 ? 'rank-top' : ''}">${idx + 1}位</span>
+            <span style="font-weight:bold; color: ${sc > 0 ? '#fff' : '#777'}">${sc} pt</span>
+        `;
+        listEl.appendChild(li);
+    });
+}
+
+// ==========================================
+// ゲーム物理＆メインロジック
+// ==========================================
+const { Engine, Runner, Bodies, Composite, Events } = Matter;
 
 const engine = Engine.create({ 
     gravity: { y: 1.0 },
@@ -501,16 +686,17 @@ const HEIGHT = 560;
 const DEAD_LINE = 95; 
 
 let score = 0;
-let tsuruCreatedCount = 0;   // ツルの作成カウント
-let kobukuroCreatedCount = 0; // コブクロの作成カウント
-let teppouCreatedCount = 0;  // テッポウの作成カウント
-let kashiraCreatedCount = 0; // カシラの作成カウント
+let tsuruCreatedCount = 0;
+let kobukuroCreatedCount = 0;
+let teppouCreatedCount = 0;
+let kashiraCreatedCount = 0;
 
-let currentMotsuIndex = getRandomMotsuIndex();
-let nextMotsuIndex = getRandomMotsuIndex();
-let isReadyToDrop = true;
+let currentMotsuIndex = 0;
+let nextMotsuIndex = 0;
+let isReadyToDrop = false;
 let previewX = WIDTH / 2;
 let gameOver = false;
+let gameStarted = false;
 
 const MOTSU_PHYSICS = {
     restitution: 0.18, 
@@ -518,6 +704,7 @@ const MOTSU_PHYSICS = {
     density: 0.001
 };
 
+// 境界壁
 const wallOptions = { isStatic: true, friction: 0.1, render: { visible: false } };
 const ground = Bodies.rectangle(WIDTH / 2, HEIGHT + 40, WIDTH + 100, 80, wallOptions);
 const leftWall = Bodies.rectangle(-40, HEIGHT / 2, 80, HEIGHT + 100, wallOptions);
@@ -525,13 +712,6 @@ const rightWall = Bodies.rectangle(WIDTH + 40, HEIGHT / 2, 80, HEIGHT + 100, wal
 Composite.add(world, [ground, leftWall, rightWall]);
 
 const runner = Runner.create();
-Runner.run(runner, engine);
-
-function init() {
-    buildEvolutionGuide();
-    drawNext();
-    requestAnimationFrame(renderLoop);
-}
 
 function getRandomMotsuIndex() {
     return Math.floor(Math.random() * 5);
@@ -546,7 +726,7 @@ function buildEvolutionGuide() {
         const item = document.createElement("div");
         item.className = "evo-item";
         
-        const displaySize = Math.max(6, (m.radius / maxRadius) * 20);
+        const displaySize = Math.max(6, (m.radius / maxRadius) * 18);
         
         const circle = document.createElement("div");
         circle.className = "evo-circle";
@@ -569,19 +749,65 @@ function buildEvolutionGuide() {
     });
 }
 
+function startGame() {
+    initAudio();
+    document.getElementById("title-modal").style.display = "none";
+    resetGameState();
+    gameStarted = true;
+    Runner.run(runner, engine);
+    if (isSoundEnabled) startBGM();
+}
+
+function backToTitle() {
+    document.getElementById("game-over-modal").style.display = "none";
+    document.getElementById("title-modal").style.display = "flex";
+    renderRankingUI();
+    gameStarted = false;
+}
+
+function resetAndStartGame() {
+    document.getElementById("game-over-modal").style.display = "none";
+    resetGameState();
+    gameStarted = true;
+    if (isSoundEnabled) startBGM();
+}
+
+function resetGameState() {
+    // 画面上の物理ボディをクリア
+    const allBodies = Composite.allBodies(world);
+    allBodies.forEach(b => {
+        if (!b.isStatic) Composite.remove(world, b);
+    });
+
+    score = 0;
+    tsuruCreatedCount = 0;
+    kobukuroCreatedCount = 0;
+    teppouCreatedCount = 0;
+    kashiraCreatedCount = 0;
+    document.getElementById("score-val").innerText = "0";
+
+    currentMotsuIndex = getRandomMotsuIndex();
+    nextMotsuIndex = getRandomMotsuIndex();
+    previewX = WIDTH / 2;
+    gameOver = false;
+    isReadyToDrop = true;
+
+    drawNext();
+}
+
 function drawNext() {
-    nextCtx.clearRect(0, 0, 50, 50);
+    nextCtx.clearRect(0, 0, 40, 40);
     const nextType = MOTSU_TYPES[nextMotsuIndex];
-    const r = Math.min(16, nextType.radius * 0.8);
+    const r = Math.min(14, nextType.radius * 0.7);
 
     nextCtx.save();
     nextCtx.beginPath();
-    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.arc(20, 20, r, 0, 2 * Math.PI);
     nextCtx.closePath();
     nextCtx.clip();
 
     if (nextType.imgElement && nextType.imgElement.complete && nextType.imgElement.naturalWidth !== 0) {
-        nextCtx.drawImage(nextType.imgElement, 25 - r, 25 - r, r * 2, r * 2);
+        nextCtx.drawImage(nextType.imgElement, 20 - r, 20 - r, r * 2, r * 2);
     } else {
         nextCtx.fillStyle = nextType.color;
         nextCtx.fill();
@@ -592,7 +818,7 @@ function drawNext() {
     nextCtx.strokeStyle = "#fff";
     nextCtx.lineWidth = 1.5;
     nextCtx.beginPath();
-    nextCtx.arc(25, 25, r, 0, 2 * Math.PI);
+    nextCtx.arc(20, 20, r, 0, 2 * Math.PI);
     nextCtx.stroke();
 }
 
@@ -640,6 +866,7 @@ function drawMotsu(context, x, y, radius, angle, type, alpha = 1.0) {
 function renderLoop() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
+    // デッドライン描画
     ctx.strokeStyle = "rgba(230, 126, 34, 0.4)";
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 2;
@@ -649,6 +876,7 @@ function renderLoop() {
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // 物理ボディの描画
     const bodies = Composite.allBodies(world);
     bodies.forEach(body => {
         if (body.isStatic) return;
@@ -658,7 +886,8 @@ function renderLoop() {
         drawMotsu(ctx, body.position.x, body.position.y, type.radius, body.angle, type);
     });
 
-    if (isReadyToDrop && !gameOver) {
+    // プレビュー表示
+    if (gameStarted && isReadyToDrop && !gameOver) {
         const currentType = MOTSU_TYPES[currentMotsuIndex];
         drawMotsu(ctx, previewX, DEAD_LINE - 25, currentType.radius, 0, currentType, 0.8);
         
@@ -671,25 +900,27 @@ function renderLoop() {
         ctx.setLineDash([]);
     }
 
-    if (!gameOver) {
-        requestAnimationFrame(renderLoop);
-    }
+    requestAnimationFrame(renderLoop);
 }
 
 function updatePreviewPosition(clientX) {
-    if (!isReadyToDrop || gameOver) return;
+    if (!gameStarted || !isReadyToDrop || gameOver) return;
     const rect = canvas.getBoundingClientRect();
-    previewX = clientX - rect.left;
+    
+    // スケール変更に対応した正確な座標計算
+    const scaleX = canvas.width / rect.width;
+    previewX = (clientX - rect.left) * scaleX;
     
     const r = MOTSU_TYPES[currentMotsuIndex].radius;
     if (previewX < r) previewX = r;
     if (previewX > WIDTH - r) previewX = WIDTH - r;
 }
 
+// 操作イベントリスナー
 canvas.addEventListener("mousemove", (e) => updatePreviewPosition(e.clientX));
 canvas.addEventListener("click", () => { 
     initAudio();
-    if(isReadyToDrop && !gameOver) dropMotsu(); 
+    if(gameStarted && isReadyToDrop && !gameOver) dropMotsu(); 
 });
 
 canvas.addEventListener("touchmove", (e) => {
@@ -698,7 +929,7 @@ canvas.addEventListener("touchmove", (e) => {
 }, { passive: false });
 canvas.addEventListener("touchend", () => { 
     initAudio();
-    if(isReadyToDrop && !gameOver) dropMotsu(); 
+    if(gameStarted && isReadyToDrop && !gameOver) dropMotsu(); 
 });
 
 function dropMotsu() {
@@ -724,13 +955,15 @@ function dropMotsu() {
     drawNext();
 
     setTimeout(() => {
-        isReadyToDrop = true;
-        updatePreviewPosition(previewX);
+        if (!gameOver && gameStarted) {
+            isReadyToDrop = true;
+        }
     }, 600);
 }
 
-// --- 合体ロジック ＆ カウント機能 ---
+// --- 衝突・合体処理 ---
 Events.on(engine, 'collisionStart', (event) => {
+    if (!gameStarted || gameOver) return;
     const pairs = event.pairs;
     
     pairs.forEach(pair => {
@@ -791,9 +1024,9 @@ Events.on(engine, 'collisionStart', (event) => {
     });
 });
 
-// --- ラインオーバー判定 ---
+// --- デッドラインオーバー判定 (ドロップ後3秒経過 & 1.5秒間静止) ---
 Events.on(engine, 'afterUpdate', () => {
-    if (gameOver) return;
+    if (!gameStarted || gameOver) return;
     
     const bodies = Composite.allBodies(world);
     let triggerGameOver = false;
@@ -824,13 +1057,21 @@ Events.on(engine, 'afterUpdate', () => {
     }
 });
 
-// --- リザルト画面表示 ---
+function manualFinish() {
+    if (!gameStarted || gameOver) return;
+    gameOverAction();
+}
+
+// --- リザルト画面表示 ＆ ハイスコア保存 ---
 function gameOverAction() {
     if (gameOver) return;
     gameOver = true;
     stopBGM();
     playGameOverSound();
     
+    // スコアの記録
+    saveScoreToRanking(score);
+
     // スコア＆各カウントの反映
     document.getElementById("modal-score-val").innerText = score;
     document.getElementById("tsuru-count").innerText = `${tsuruCreatedCount}個`;
@@ -838,17 +1079,18 @@ function gameOverAction() {
     document.getElementById("teppou-count").innerText = `${teppouCreatedCount}個`;
     document.getElementById("kashira-count").innerText = `${kashiraCreatedCount}個`;
     
-    // ダイアログを表示
+    // 精算完了ダイアログの表示
     const modal = document.getElementById("game-over-modal");
     modal.style.display = "flex";
 }
 
-// リトライ処理
-function retryGame() {
-    location.reload();
-}
-
-init();
+// 初期化
+window.onload = function() {
+    buildEvolutionGuide();
+    renderRankingUI();
+    fitToScreen();
+    requestAnimationFrame(renderLoop);
+};
 </script>
 
 </body>
