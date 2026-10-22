@@ -161,7 +161,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 10;
             flex-direction: column;
             justify-content: center;
@@ -172,29 +172,72 @@
         #modal-card {
             background: #34231e;
             border: 3px solid #f39c12;
-            padding: 25px 35px;
+            padding: 20px 25px;
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            width: 270px;
         }
 
         #modal-title {
-            font-size: 24px;
+            font-size: 22px;
             color: #e74c3c;
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             font-weight: bold;
+            border-bottom: 2px solid #553a33;
+            padding-bottom: 6px;
         }
 
         #modal-score-label {
-            font-size: 14px;
+            font-size: 11px;
             color: #f39c12;
+            margin-top: 4px;
         }
 
         #modal-score-val {
-            font-size: 32px;
+            font-size: 30px;
             color: #fff;
-            margin: 5px 0 20px 0;
+            margin: 0 0 12px 0;
             font-weight: bold;
+        }
+
+        /* 部位実績エリア */
+        .result-counts {
+            background: #1a0f0d;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 16px;
+            border: 1px solid #553a33;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .result-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #fff;
+        }
+
+        .result-val {
+            color: #f1c40f;
+            font-size: 16px;
         }
 
         #retry-btn {
@@ -207,6 +250,7 @@
             border-radius: 8px;
             cursor: pointer;
             box-shadow: 0 4px #a0520d;
+            width: 100%;
         }
         #retry-btn:active {
             transform: translateY(2px);
@@ -241,6 +285,39 @@
                     <div id="modal-title">精算完了</div>
                     <div id="modal-score-label">FINAL SCORE</div>
                     <div id="modal-score-val">0</div>
+
+                    <!-- 作成実績カウント -->
+                    <div class="result-counts">
+                        <div class="result-row">
+                            <span class="result-label">
+                                <span class="badge-icon" style="background-color: #1abc9c;"></span>
+                                ツル（最大）
+                            </span>
+                            <span id="tsuru-count" class="result-val">0個</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">
+                                <span class="badge-icon" style="background-color: #ffaaa6;"></span>
+                                コブクロ
+                            </span>
+                            <span id="kobukuro-count" class="result-val">0個</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">
+                                <span class="badge-icon" style="background-color: #f8a5c2;"></span>
+                                テッポウ
+                            </span>
+                            <span id="teppou-count" class="result-val">0個</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">
+                                <span class="badge-icon" style="background-color: #b33939;"></span>
+                                カシラ
+                            </span>
+                            <span id="kashira-count" class="result-val">0個</span>
+                        </div>
+                    </div>
+
                     <button id="retry-btn" onclick="retryGame()">もう一度？</button>
                 </div>
             </div>
@@ -424,6 +501,11 @@ const HEIGHT = 560;
 const DEAD_LINE = 95; 
 
 let score = 0;
+let tsuruCreatedCount = 0;   // ツルの作成カウント
+let kobukuroCreatedCount = 0; // コブクロの作成カウント
+let teppouCreatedCount = 0;  // テッポウの作成カウント
+let kashiraCreatedCount = 0; // カシラの作成カウント
+
 let currentMotsuIndex = getRandomMotsuIndex();
 let nextMotsuIndex = getRandomMotsuIndex();
 let isReadyToDrop = true;
@@ -647,6 +729,7 @@ function dropMotsu() {
     }, 600);
 }
 
+// --- 合体ロジック ＆ カウント機能 ---
 Events.on(engine, 'collisionStart', (event) => {
     const pairs = event.pairs;
     
@@ -659,6 +742,7 @@ Events.on(engine, 'collisionStart', (event) => {
 
             const currentIndex = MOTSU_TYPES.findIndex(m => m.name === bodyA.motsuType.name);
             
+            // 最大サイズ「ツル」同士の合体
             if (currentIndex === MOTSU_TYPES.length - 1) {
                 score += 100;
                 document.getElementById("score-val").innerText = score;
@@ -671,6 +755,17 @@ Events.on(engine, 'collisionStart', (event) => {
             const midX = (bodyA.position.x + bodyB.position.x) / 2;
             const midY = (bodyA.position.y + bodyB.position.y) / 2;
             const nextType = MOTSU_TYPES[currentIndex + 1];
+
+            // 実績のカウントアップ（ツル、コブクロ、テッポウ、カシラ）
+            if (nextType.name === "ツル") {
+                tsuruCreatedCount++;
+            } else if (nextType.name === "コブクロ") {
+                kobukuroCreatedCount++;
+            } else if (nextType.name === "テッポウ") {
+                teppouCreatedCount++;
+            } else if (nextType.name === "カシラ") {
+                kashiraCreatedCount++;
+            }
 
             bodyA.isDead = true;
             bodyB.isDead = true;
@@ -696,7 +791,7 @@ Events.on(engine, 'collisionStart', (event) => {
     });
 });
 
-// --- 調整版：ラインオーバー判定（理不尽な死を防止） ---
+// --- ラインオーバー判定 ---
 Events.on(engine, 'afterUpdate', () => {
     if (gameOver) return;
     
@@ -709,17 +804,14 @@ Events.on(engine, 'afterUpdate', () => {
         const topY = body.position.y - body.motsuType.radius;
         
         if (topY < DEAD_LINE) {
-            // ドロップ後3秒間は判定スキップ（跳ね返りや出現直後の判定除外）
             if (Date.now() - body.spawnTime > 3000) { 
-                // スピードがほぼゼロ（停止状態）の場合のみカウント
                 if (body.speed < 0.15) {
                     body.lockTimer += 1;
-                    // ライン上で約1.5秒間（90フレーム）動かずに静止し続けた場合のみ即死
-                    if (body.lockTimer > 90) {
+                    if (body.lockTimer > 90) { // 1.5秒間動かず停止した場合
                         triggerGameOver = true;
                     }
                 } else {
-                    body.lockTimer = 0; // 転がったり動いている最中はセーフ
+                    body.lockTimer = 0; 
                 }
             }
         } else {
@@ -732,17 +824,21 @@ Events.on(engine, 'afterUpdate', () => {
     }
 });
 
-// --- ゲームオーバー表示処理 ---
+// --- リザルト画面表示 ---
 function gameOverAction() {
     if (gameOver) return;
     gameOver = true;
     stopBGM();
     playGameOverSound();
     
-    // スコアの反映
+    // スコア＆各カウントの反映
     document.getElementById("modal-score-val").innerText = score;
+    document.getElementById("tsuru-count").innerText = `${tsuruCreatedCount}個`;
+    document.getElementById("kobukuro-count").innerText = `${kobukuroCreatedCount}個`;
+    document.getElementById("teppou-count").innerText = `${teppouCreatedCount}個`;
+    document.getElementById("kashira-count").innerText = `${kashiraCreatedCount}個`;
     
-    // ダイアログ表示
+    // ダイアログを表示
     const modal = document.getElementById("game-over-modal");
     modal.style.display = "flex";
 }
